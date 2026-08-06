@@ -13,3 +13,4 @@ Add `-g` to install globally, `--agent <name>` to skip the agent picker (`claude
 | skill | what it does |
 | --- | --- |
 | [treehouse](skills/treehouse/SKILL.md) | create, work in, and clean up git worktrees via the [treehouse](https://github.com/kunchenguid/treehouse) CLI |
+| [code-judo-review](skills/code-judo-review/SKILL.md) | exceptionally strict maintainability and structural-quality review; code judo, simplification, spaghetti prevention |
