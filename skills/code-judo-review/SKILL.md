@@ -2,6 +2,8 @@
 name: code-judo-review
 description: Perform an exceptionally strict maintainability and structural-quality review. Use for thermo-nuclear reviews, extreme code-quality audits, or rigorous reviews focused on simplification, abstraction quality, modularity, and spaghetti-code prevention.
 disable-model-invocation: true
+source: https://github.com/cursor/plugins/tree/main/cursor-team-kit/skills/thermo-nuclear-code-quality-review
+license: license of the original applies where relevant
 ---
 
 # Thermo-Nuclear Code Quality Review
@@ -119,6 +121,3 @@ Approve only when:
 - Logic remains in its canonical architectural home.
 - The implementation leaves the affected code at least as maintainable as before.
 
-## Attribution
-
-Adapted from the [thermo-nuclear-code-quality-review](https://github.com/cursor/plugins/tree/main/cursor-team-kit/skills/thermo-nuclear-code-quality-review) skill in [cursor/plugins](https://github.com/cursor/plugins) cursor-team-kit. Skill content adapted from the original by the repository owner; license of the original applies where relevant.
