@@ -140,7 +140,7 @@ Example entry:
 
 `- [Major] [yagni] src/store.ts:42 - Generic provider interface has one implementation and no demonstrated extension point. It adds another contract and indirection without reducing complexity. Fix: use the concrete store directly until a second implementation requires abstraction.`
 
-Under **Approve**, write `- None.`: an approval explicitly states that no changes are requested. Under **Needs discussion**, list only items that actually require a code change; questions and decisions belong in Open questions.
+If no changes are requested under the chosen verdict, write `- None.`: an approval explicitly states that no changes are requested. Under **Needs discussion**, list only items that actually require a code change; questions and decisions belong in Open questions.
 
 ### Approved items
 
