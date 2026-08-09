@@ -102,7 +102,7 @@ Start with exactly one verdict:
 
 **Approve**, **Request changes**, or **Needs discussion**
 
-The output must then include, in order: a Reviewed line, a Requested changes section, and an Approved items section. Optionally finish with a Code judo line. Do not add a summary that repeats the findings.
+The output must then include, in order: a Reviewed line, a Requested changes section, and an Approved items section. Under **Needs discussion**, follow these with an Open questions section. Optionally finish with a Code judo line. Do not add a summary that repeats the findings.
 
 ### Reviewed
 
@@ -126,7 +126,9 @@ Severity:
 
 `Blocker` - should not merge as implemented.  
 `Major` - substantial maintainability or complexity problem worth fixing.  
-`Suggestion` - worthwhile simplification, but not merge-blocking.
+`Suggestion` - worthwhile lower-priority change that should be addressed, but is not independently merge-blocking.
+
+Anything listed under **Requested changes** is expected to be addressed. `Suggestion` means lower-priority requested work, not optional advice.
 
 Useful tags include:
 
@@ -142,7 +144,7 @@ Under **Approve**, write `- None.`: an approval explicitly states that no change
 
 ### Approved items
 
-List the material items that were checked and accepted, concise and limited to meaningful aspects of the reviewed change. Do not manufacture an exhaustive checklist to make the approval look substantial. If no material problems were found, record that concisely, e.g. `- No material maintainability or over-engineering issues found in the reviewed changes.`
+List the material items that were checked and accepted, concise and limited to meaningful aspects of the reviewed change. Do not manufacture an exhaustive checklist to make the approval look substantial. If there are no meaningful approved items to record, write `- None.` rather than inventing items. If no material problems were found, record that concisely, e.g. `- No material maintainability or over-engineering issues found in the reviewed changes.`
 
 When prior review feedback is available in the review context, verify previously requested changes against the reviewed revision and report resolved ones here as approved rather than raising them again. The Reviewed line lets a later review of a follow-up commit distinguish the previously reviewed revision from subsequent commits.
 
