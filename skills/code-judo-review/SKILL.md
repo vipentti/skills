@@ -29,7 +29,7 @@ Evaluate material changes for:
 - **Coupling/readability:** increased statefulness, file sprawl, sequencing constraints, or context required to reason about the code.
 - **Consistency/atomicity:** related operations that can become partially applied or inconsistent when a coherent operation is practical.
 
-Passing tests do not justify unnecessary structural complexity.
+Correct behavior and passing tests do not justify unnecessary structural complexity.
 
 ## Simplification Ladder
 
@@ -66,7 +66,7 @@ These are evidence requiring judgment, not mechanical rules.
 
 ## Do Not Oversimplify
 
-Do not remove complexity that materially protects correctness, trust boundaries, security, data integrity, error handling, concurrency, accessibility, required compatibility, or useful non-trivial tests.
+Do not recommend removing complexity that materially protects correctness, trust boundaries, security, data integrity, error handling, concurrency, accessibility, required compatibility, or useful non-trivial tests.
 
 Less code is not better if it hides necessary complexity or moves it somewhere worse.
 
