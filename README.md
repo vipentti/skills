@@ -3,8 +3,9 @@
 Personal agent skills, in the [`npx skills`](https://github.com/vercel-labs/skills) layout.
 
 ```bash
-npx skills add vipentti/skills                   # all skills
-npx skills add vipentti/skills/skills/treehouse  # just one (full path in repo)
+npx skills add vipentti/skills                              # all skills
+npx skills add vipentti/skills --skill treehouse            # just one
+npx skills add vipentti/skills --skill code-judo-review     # just one
 ```
 
 The CLI clones over ssh, so a `gh`/ssh-authenticated machine just works.
