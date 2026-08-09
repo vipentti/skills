@@ -102,13 +102,25 @@ Start with exactly one verdict:
 
 **Approve**, **Request changes**, or **Needs discussion**
 
-Then list only material findings, highest priority first.
+The output must then include, in order: a Reviewed line, a Requested changes section, and an Approved items section. Optionally finish with a Code judo line. Do not add a summary that repeats the findings.
 
-Default to at most **5 findings**. Exceed this only when additional independent Blocker or Major findings materially affect the review.
+### Reviewed
+
+Identify exactly what was reviewed. For a GitHub pull request, include the pull request number and the exact head commit SHA of the reviewed revision, in compact form:
+
+`Reviewed: PR #123 @ 1a2b3c4d5e6f7890abcdef1234567890abcdef12`
+
+Use the PR head commit actually reviewed, never a synthetic or test merge commit; a PR may gain commits after a review, so the reader must be able to tell exactly which revision was covered. If the commit SHA cannot reasonably be determined, state explicitly that it is unavailable rather than guessing. For non-PR reviews, no PR number is required; include a commit SHA when the reviewed revision can reasonably be determined.
+
+### Requested changes
+
+List every material change the review is actually requesting, highest priority first. Do not leave requested work implicit in prose or require the implementing agent to infer it from reasoning; each entry carries the reasoning and fix direction.
 
 Use one compact entry per finding:
 
 `- [Severity] [tag] file:line - Problem. Why it matters. Fix: direction.`
+
+Default to at most **5 findings**. Exceed this only when additional independent Blocker or Major findings materially affect the review.
 
 Severity:
 
@@ -122,18 +134,26 @@ Useful tags include:
 
 Do not create findings merely to use every category.
 
-### Example
+Example entry:
 
 `- [Major] [yagni] src/store.ts:42 - Generic provider interface has one implementation and no demonstrated extension point. It adds another contract and indirection without reducing complexity. Fix: use the concrete store directly until a second implementation requires abstraction.`
+
+Under **Approve**, write `- None.`: an approval explicitly states that no changes are requested. Under **Needs discussion**, list only items that actually require a code change; questions and decisions belong in Open questions.
+
+### Approved items
+
+List the material items that were checked and accepted, concise and limited to meaningful aspects of the reviewed change. Do not manufacture an exhaustive checklist to make the approval look substantial. If no material problems were found, record that concisely, e.g. `- No material maintainability or over-engineering issues found in the reviewed changes.`
+
+When prior review feedback is available in the review context, verify previously requested changes against the reviewed revision and report resolved ones here as approved rather than raising them again. The Reviewed line lets a later review of a follow-up commit distinguish the previously reviewed revision from subsequent commits.
+
+### Open questions
+
+Only under **Needs discussion**: list questions and decisions that require discussion but no code change, so an implementing agent never mistakes a discussion item for a requested change.
+
+### Code judo
 
 When one restructuring would eliminate a disproportionate amount of complexity, finish with:
 
 `Code judo: <single highest-value simplification>.`
 
 Omit this line when there is no substantial judo opportunity.
-
-If no material problems are found:
-
-`Approve - no material maintainability or over-engineering issues found.`
-
-Do not add a summary that repeats the findings.
