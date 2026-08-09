@@ -126,7 +126,7 @@ Severity:
 
 `Blocker` - should not merge as implemented.  
 `Major` - substantial maintainability or complexity problem worth fixing.  
-`Suggestion` - worthwhile lower-priority change that should be addressed, but is not independently merge-blocking.
+`Suggestion` - worthwhile lower-priority change that should be addressed, but does not represent a substantial maintainability or complexity problem on its own.
 
 Anything listed under **Requested changes** is expected to be addressed. `Suggestion` means lower-priority requested work, not optional advice.
 
