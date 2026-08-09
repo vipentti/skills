@@ -1,6 +1,7 @@
 ---
 name: treehouse
 description: Create, work in, and clean up isolated git worktrees using the treehouse CLI. Use when the user asks to set up a treehouse or a worktree, work on a branch in isolation, or clean up / return / destroy a worktree.
+license: MIT
 ---
 
 # Treehouse worktrees
