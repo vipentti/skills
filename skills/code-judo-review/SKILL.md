@@ -110,9 +110,19 @@ Use the reviewed PR head SHA, never a synthetic/test merge commit. If unavailabl
 
 List every material requested change, highest priority first. Requested work must never be implicit.
 
+Findings are numbered. Each finding starts with a number, then severity, tag, location, and a concise problem. `Why:` gives the reasoning and material impact; `Fix:` gives the concrete implementation direction. `Why:` and `Fix:` are indented continuation lines, not nested bullets.
+
 Format:
 
-`- [Severity] [tag] file:line - Problem. Why it matters. Fix: direction.`
+`1. [Severity] [tag] file:line - Problem.`
+`   Why: impact/reasoning.`
+`   Fix: concrete direction.`
+
+Example:
+
+`1. [Major] [yagni] src/store.ts:42 - Generic provider interface has one implementation.`
+`   Why: It adds another contract and indirection without reducing complexity.`
+`   Fix: Use the concrete store directly until a second implementation requires abstraction.`
 
 Default to at most **5 findings**; exceed this only for additional independent Blocker or Major issues.
 
@@ -128,11 +138,11 @@ Useful tags: `judo`, `yagni`, `delete`, `reuse`, `stdlib`, `native`, `dependency
 
 Do not create findings merely to use categories.
 
-If no changes are requested, write `- None.` Under **Needs discussion**, put only actual code changes here; questions belong in Open questions.
+If no changes are requested, write `- None.` unnumbered; the empty case is never numbered. Under **Needs discussion**, put only actual code changes here; questions belong in Open questions.
 
 ### Approved items
 
-List meaningful items that were checked and accepted. Keep them concise; do not invent an exhaustive checklist.
+List meaningful items that were checked and accepted. Keep them concise; do not invent an exhaustive checklist. Use plain bullets, not the numbered finding format; approved items are not implementation tasks.
 
 If none, write `- None.` For a clean approval, `- No material maintainability or over-engineering issues found in the reviewed changes.` is sufficient.
 
