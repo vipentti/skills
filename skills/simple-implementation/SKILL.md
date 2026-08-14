@@ -1,5 +1,5 @@
 ---
-name: implementation-simplicity
+name: simple-implementation
 description: >
   Prevent overengineering in features, fixes, and refactors. Prefer the smallest
   direct solution that meets current requirements and preserves correctness.
