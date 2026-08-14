@@ -1,8 +1,10 @@
 ---
 name: simple-implementation
 description: >
-  Prevent overengineering in features, fixes, and refactors. Prefer the smallest
-  direct solution that meets current requirements and preserves correctness.
+  Use when implementing features, fixing bugs, refactoring, or making other code
+  changes. Prefer the simplest correct implementation: reuse existing code and
+  native capabilities, avoid speculative abstractions and dependencies, and add
+  only machinery required by current requirements.
 license: MIT
 ---
 
