@@ -43,8 +43,8 @@ Repeat until no unchecked tasks remain:
 6. Create exactly one commit containing that task's implementation and its
    Planlet state change. Commit no unrelated files or hunks.
 7. If the commit fails, do not start another task. Resolve it and commit, or
-   restore task state through the Planlet CLI before stopping and reporting the
-   blocker.
+   stop and report the blocker while keeping the implementation and its Planlet
+   state together for the eventual commit.
 8. Report the task ID, outcome, verification, commit, and next task. Where
    progress updates cannot be sent while continuing, include these details for
    every task in the final report.
