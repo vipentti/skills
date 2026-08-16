@@ -25,7 +25,7 @@ skill adds stricter execution and Git workflow rules.
 
 When implementing a Planlet, follow this loop in order:
 
-1. Select and validate exactly one active Planlet.
+1. Select exactly one active Planlet and validate it.
 2. Read its complete `plan.md` and `tasks.md` before implementation begins.
 3. Take the first unchecked task, in listed order.
 4. Implement only that task.
@@ -49,6 +49,7 @@ If the user supplies a slug, use that slug if it is a valid active Planlet.
 
 If no slug is supplied:
 
+- if none are active, report that and ask the user to create or identify one;
 - use the sole active Planlet when there is exactly one;
 - if several are active and the requested work clearly identifies one, use it;
 - otherwise ask the user to choose rather than guessing.
@@ -136,16 +137,23 @@ or hunks belonging to the current task.
 Unless repository instructions say otherwise, use the repository's established
 commit-message convention.
 
+If the commit fails, do not begin the next task. Resolve the failure and create
+the required commit, or, if you must stop without a commit, restore task state
+through the Planlet CLI and report the blocker.
+
 ## Report After Every Task
 
-After each task commit, briefly report:
+After each task commit, provide a progress update when the environment supports
+continuing after an update. In a single-response environment, include these
+details for every completed task in the final report:
 
 - the completed task ID and outcome;
 - verification performed and whether it passed;
 - the commit created;
 - what task comes next, if any.
 
-Do not wait until the entire Planlet is finished before reporting progress.
+Do not wait until the entire Planlet is finished before reporting progress when
+progress updates are supported.
 
 ## Complete Separately
 
@@ -162,7 +170,9 @@ Use the normal `planlet-complete` skill or equivalent Planlet CLI lifecycle
 operation. Do not manually move the Planlet or write completion metadata.
 
 After successful completion, create a separate commit containing the
-completion/archive state.
+completion/archive state. If that commit fails, do not perform other work:
+resolve the failure and create the completion-state commit, or report the
+blocker.
 
 The completion commit must not contain implementation work from the final task
 or any other task.
