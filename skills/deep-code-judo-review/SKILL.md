@@ -196,6 +196,14 @@ Format:
    Fix: direction
 ```
 
+Example:
+
+```
+1. [Major] [yagni] src/store.ts:42 - Generic provider interface has one implementation.
+   Why: It adds another contract and indirection without reducing complexity.
+   Fix: Use the concrete store directly until a second implementation requires abstraction.
+```
+
 Severity:
 
 * `Blocker`: prevents safe merge

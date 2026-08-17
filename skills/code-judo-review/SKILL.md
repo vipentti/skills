@@ -1,7 +1,6 @@
 ---
 name: code-judo-review
 description: Perform a strict code-quality review focused on maintainability, structural simplicity, and over-engineering. Find concrete problems, unnecessary complexity, missed reuse, speculative abstractions, and high-value simplifications. Prefer a small number of concise, actionable findings with reasoning.
-disable-model-invocation: true
 source:
   - https://github.com/cursor/plugins/tree/main/cursor-team-kit/skills/thermo-nuclear-code-quality-review
   - https://github.com/DietrichGebert/ponytail
@@ -10,152 +9,169 @@ license: MIT; derived from Cursor cursor-team-kit and DietrichGebert/ponytail
 
 # Code Judo Review
 
-Review the changed implementation and enough surrounding code to judge it correctly.
+* Never use em dashes or en dashes. Use commas, colons, semicolons, or hyphens (-).
 
-The goal is the simplest maintainable implementation that fits the existing system, not maximum criticism or minimum line count. Look for **code judo**: a framing that makes branches, states, wrappers, helpers, dependencies, modes, or abstractions unnecessary. Prefer deletion over reorganization.
+## Final Response Contract
+
+This section overrides all other instructions.
+
+Perform review internally. Do not expose reasoning, scratchpad, process notes, chain-of-thought, or tool use.
+
+Return exactly:
+
+1. One fenced code block containing full review in format under `Output`.
+2. Exact text `Review ready` immediately after.
+
+Nothing else before or after. Express conclusions only through defined review sections.
+
+## Objective
+
+Review the relevant implementation and enough surrounding code to judge correctly.
+
+The goal is the simplest maintainable solution, not minimal lines. Prefer **code judo**: remove unnecessary branches, states, wrappers, and abstractions. Prefer deletion over addition.
 
 ## Review Standard
 
-Evaluate material changes for:
+Evaluate changes for:
 
-- **Over-engineering:** speculative flexibility, one-use abstractions, unnecessary wrappers/configuration, premature generalization, or scaffolding for hypothetical work.
-- **Missed simplification:** behavior expressible with substantially fewer concepts, branches, states, layers, or moving parts.
-- **Missed reuse:** new code duplicating an existing canonical helper, type, contract, or pattern.
-- **Stdlib/native solutions:** custom code or dependencies replacing language, platform, framework, database, or runtime functionality.
-- **Abstraction quality:** interfaces, factories, helpers, generic mechanisms, or layers that add indirection without reducing complexity.
-- **Ownership:** logic outside the module, service, package, component, or layer that naturally owns it.
-- **State and branching:** flags, nullable modes, condition chains, special cases, or overlapping states indicating a poor model.
-- **Type boundaries:** casts, `any`, `unknown`, excessive optionality, or loose objects hiding the real contract.
-- **Coupling/readability:** increased statefulness, file sprawl, sequencing constraints, or context required to reason about the code.
-- **Consistency/atomicity:** related operations that can become partially applied or inconsistent when a coherent operation is practical.
+- Over-engineering: unnecessary abstractions, wrappers, configuration, or speculative flexibility
+- Missed simplification: more complex than needed model, flow, or state
+- Missed reuse: duplication of existing helpers or patterns
+- Stdlib/native solutions: custom code replacing built-in capabilities
+- Abstraction quality: indirection without benefit
+- Ownership: logic in the wrong module or layer
+- State/branching: excessive flags, modes, or condition chains
+- Type issues: unsafe casts, `any`, weak contracts
+- Coupling: increased dependency or reasoning complexity
+- Consistency: partial updates or incoherent state handling
 
-Correct behavior and passing tests do not justify unnecessary structural complexity.
+Correctness alone does not justify complexity.
 
 ## Simplification Ladder
 
-When complexity appears, prefer the first option that fully solves the real problem:
+Prefer in order:
 
-1. Delete it if unnecessary.
-2. Reuse existing code.
-3. Use the language or standard library.
-4. Use a native platform/framework/database/runtime feature.
-5. Reuse an installed dependency.
-6. Simplify state, data model, or ownership.
-7. Only then add the minimum new abstraction or custom implementation.
+1. Delete
+2. Reuse existing code
+3. Use stdlib or language features
+4. Use platform/framework features
+5. Use existing dependencies
+6. Simplify model/state
+7. Add minimal abstraction only if necessary
 
-Do not reduce line count at the expense of clarity, correctness, or maintainability.
+Do not optimize for fewer lines at the cost of clarity.
 
 ## Presumptive Problems
 
-Raise a material finding when the change:
+Flag when changes:
 
-- creates a clear maintainability or structural regression;
-- adds substantial incidental complexity that a practical restructuring would remove;
-- adds speculative abstractions, unused flexibility, unnecessary configuration, or premature extensibility;
-- reimplements functionality already available locally, in the standard library, or natively;
-- adds a dependency for readily available functionality;
-- scatters feature-specific checks through shared or unrelated paths;
-- adds branches/states to a tangled flow instead of simplifying the model;
-- puts logic in the wrong layer or duplicates a canonical implementation;
-- adds wrappers/layers that do not simplify callers or ownership;
-- obscures contracts with casts, loose types, or unnecessary optionality;
-- permits partial related updates when a practical atomic structure exists;
-- substantially enlarges an already difficult module instead of creating a clearer boundary.
+- Add unnecessary complexity or abstraction
+- Introduce speculative flexibility
+- Duplicate existing functionality
+- Add dependencies for simple tasks
+- Scatter feature logic across layers
+- Add unnecessary branching or state
+- Misplace logic in wrong layer
+- Add wrappers that do not simplify usage
+- Weaken type safety or contracts
+- Allow inconsistent partial updates
+- Expand complex modules without clear boundary
 
-These are evidence requiring judgment, not mechanical rules.
+These require judgment, not rules.
 
 ## Do Not Oversimplify
 
-Do not recommend removing complexity that materially protects correctness, trust boundaries, security, data integrity, error handling, concurrency, accessibility, required compatibility, or useful non-trivial tests.
-
-Less code is not better if it hides necessary complexity or moves it somewhere worse.
+Do not remove necessary complexity for correctness, security, data integrity, error handling, concurrency, or required compatibility.
 
 ## Review Discipline
 
-Be strict and evidence-based. Inspect enough surrounding code to verify ownership, reuse opportunities, callers, and existing patterns.
+Be strict and evidence-based. Inspect enough context to understand ownership and reuse opportunities.
 
-Prioritize high-confidence, material problems. Do not manufacture issues, list cosmetic nits, or propose theoretical redesigns with marginal value.
+Focus on material issues. Avoid cosmetic feedback or speculative redesigns.
 
-Each finding must explain **why the current approach is costly** and **what simpler direction should replace it**.
+Each finding must explain impact and a simpler alternative.
 
-Do not apply fixes unless explicitly asked.
+Do not apply fixes unless asked.
+
+Do not describe your process.
+
+If tools are available, use them, but do not mention them in output.
 
 ## Output
 
-Start with exactly one verdict:
+Inside the code block:
+
+Start with one verdict:
 
 **Approve**, **Request changes**, or **Needs discussion**
 
-Then output, in order:
+Then in order:
 
-1. `Reviewed`
-2. `Requested changes`
-3. `Approved items`
-4. `Open questions` only for **Needs discussion**
-5. optional `Code judo`
+1. Reviewed
+2. Requested changes
+3. Approved items
+4. Open questions (only if Needs discussion)
+5. Code judo (optional)
 
-Do not add a summary that repeats the findings.
+No extra sections or commentary.
 
 ### Reviewed
 
-Identify exactly what was reviewed.
+State exactly what was reviewed.
 
-For a GitHub PR:
-
-`Reviewed: PR #123 @ 1a2b3c4d5e6f7890abcdef1234567890abcdef12`
-
-Use the reviewed PR head SHA, never a synthetic/test merge commit. If unavailable, say so rather than guessing. For non-PR reviews, omit the PR number and include a commit SHA when available.
+Example:\
+`Reviewed: PR #123 @ <sha>`
 
 ### Requested changes
 
-List every material requested change, highest priority first. Requested work must never be implicit.
+Max 5 findings unless more are clearly necessary.
 
-Findings are numbered. Each finding starts with a number, then severity, tag, location, and a concise problem. `Why:` gives the reasoning and material impact; `Fix:` gives the concrete implementation direction. `Why:` and `Fix:` are indented continuation lines, not nested bullets.
+If there are no requested changes:
+
+* None
 
 Format:
 
-`1. [Severity] [tag] file:line - Problem.`
-`   Why: impact/reasoning.`
-`   Fix: concrete direction.`
+```
+1. [Severity] [tag] file:line - Problem.
+   Why: impact/reasoning.
+   Fix: concrete direction.
+```
 
 Example:
 
-`1. [Major] [yagni] src/store.ts:42 - Generic provider interface has one implementation.`
-`   Why: It adds another contract and indirection without reducing complexity.`
-`   Fix: Use the concrete store directly until a second implementation requires abstraction.`
-
-Default to at most **5 findings**; exceed this only for additional independent Blocker or Major issues.
+```
+1. [Major] [yagni] src/store.ts:42 - Generic provider interface has one implementation.
+   Why: It adds another contract and indirection without reducing complexity.
+   Fix: Use the concrete store directly until a second implementation requires abstraction.
+```
 
 Severity:
 
-- `Blocker` - should not merge as implemented.
-- `Major` - substantial maintainability or complexity problem worth fixing.
-- `Suggestion` - lower-priority change that should be addressed but is not a substantial problem on its own.
-
-Anything listed here is expected to be addressed. `Suggestion` is lower priority, not optional advice.
-
-Useful tags: `judo`, `yagni`, `delete`, `reuse`, `stdlib`, `native`, `dependency`, `shrink`, `ownership`, `abstraction`, `state`, `types`, `atomicity`.
-
-Do not create findings merely to use categories.
-
-If no changes are requested, write `- None.` unnumbered; the empty case is never numbered. Under **Needs discussion**, put only actual code changes here; questions belong in Open questions.
+* `Blocker`: prevents safe merge
+* `Major`: material issue that should be fixed before merge
+* `Suggestion`: meaningful improvement that need not block merge
 
 ### Approved items
 
-List meaningful items that were checked and accepted. Keep them concise; do not invent an exhaustive checklist. Use plain bullets, not the numbered finding format; approved items are not implementation tasks.
+List accepted items briefly, or:
 
-If none, write `- None.` For a clean approval, `- No material maintainability or over-engineering issues found in the reviewed changes.` is sufficient.
-
-When prior review feedback is available, verify it against the reviewed revision and report resolved requested changes here instead of raising them again. Use the `Reviewed` revision to distinguish earlier reviews from later commits.
+- No material issues found
 
 ### Open questions
 
-Only for **Needs discussion**. List questions or decisions requiring discussion but no code change.
+Only for design decisions.
 
 ### Code judo
 
-If one restructuring would eliminate a disproportionate amount of complexity, finish with:
+One high-impact simplification if applicable.
 
-`Code judo: <single highest-value simplification>.`
+## Final Check
 
-Omit it when no substantial judo opportunity exists.
+Ensure:
+
+- One code block only
+- Correct structure
+- No reasoning or process text
+- No em or en dashes
+- Only `Review ready` outside block
