@@ -23,6 +23,18 @@ Both roles run this first and stop if it fails:
 test "${HERDR_ENV:-}" = 1
 ```
 
+## Windows and pi
+
+On Windows, `herdr agent start --kind pi` does not work: Herdr spawns the bare executable `pi`, but Windows installs expose `pi.cmd`, so the spawn fails and the pane never reaches a ready agent. Do not retry it and do not debug it; agents get stuck in that loop.
+
+Detect Windows before starting any reviewer:
+
+```bash
+case "$(uname -s)" in *MINGW*|*MSYS*|*CYGWIN*) win=1 ;; *) win=0 ;; esac
+```
+
+When `win=1`, skip `herdr agent start` for pi and go straight to the pane-run path in the dispatcher procedure. The same applies to any kind whose CLI is installed as a `.cmd` shim (npm and scoop installs). The pane-run path also serves as the fallback on any platform when `agent start` fails for another reason.
+
 ## Contracts
 
 ### Reviewer name
@@ -102,27 +114,31 @@ herdr agent list | jq -r '.result.agents[] | select(.name=="review-<slug>") | "\
 
 A live entry means reuse it as the prompt target. If `agent_status` is `blocked`, inspect it with `herdr agent get` and `herdr agent read` first; clear a dialog with `herdr agent send-keys` only when you understand it.
 
-4. Otherwise start one. Split a sibling pane, preserving cwd and focus:
+4. Otherwise start one.
+
+Non-Windows: split a sibling pane, preserving cwd and focus, read `.result.pane.pane_id` from the response, then start the agent with the requested model and thinking as native flags after `--`:
 
 ```bash
 herdr pane split --current --direction right --cwd "$PWD" --no-focus
-```
-
-Read `.result.pane.pane_id`, then start the agent with the requested model and thinking as native flags after `--`:
-
-```bash
 herdr agent start review-<slug> --kind pi --pane <pane-id> --timeout 60000 -- --model <model> --thinking <thinking>
 ```
 
-If `agent start` fails, do not debug the platform. Use the pane-run fallback, which works everywhere (it is required on Windows, where Herdr cannot spawn `.cmd` shims such as `pi.cmd`). Reuse the same pane if it is back at an interactive shell prompt, otherwise split a fresh one:
+Windows with pi (see "Windows and pi" above), or any platform where `agent start` failed: split a fresh sibling pane, because a failed `agent start` can leave the pane dirty, then run the agent as a plain command and wait for Herdr to detect it:
 
 ```bash
+herdr pane split --current --direction right --cwd "$PWD" --no-focus
 herdr pane run <pane-id> "pi --model <model> --thinking <thinking>"
 for i in $(seq 1 30); do
   herdr agent get <pane-id> >/dev/null 2>&1 && break
   sleep 2
 done
 herdr agent get <pane-id>
+```
+
+Then name it so later rounds can reuse it by name:
+
+```bash
+herdr agent rename <pane-id> review-<slug>
 ```
 
 Translate model and thinking into the kind's own flags; ask the user when unknown. If detection never succeeds, report and stop.
@@ -181,5 +197,6 @@ herdr agent prompt <dispatcher-pane-id> "REVIEW CHANGES_REQUESTED <path>"
 - One reviewer per task slug. Reuse it across rounds; start a new one only when it is no longer live.
 - New findings file per round; never overwrite a previous round.
 - Prompt by agent name or pane id parsed from `herdr` JSON, never by sidebar position or assumption.
+- On Windows with pi, never attempt or retry `herdr agent start --kind pi`; use the pane-run path immediately.
 - Do not close workspaces, tabs, or panes you did not create. The reviewer pane belongs to the loop; close it only when the user asks.
 - If the dispatcher's pane was moved, its old pane id stops resolving for other clients; the latest request always carries the current return target.
