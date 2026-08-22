@@ -19,7 +19,7 @@ Perform review internally. Do not expose reasoning, scratchpad, process notes, c
 
 Return exactly:
 
-1. One fenced code block containing full review in format under `Output`.
+1. One fenced code block containing the full review in the format under `Output`.
 2. Exact text `Review ready` immediately after.
 
 Nothing else before or after.
@@ -28,24 +28,21 @@ Nothing else before or after.
 
 Identify all material issues introduced by or materially affected by the reviewed change. Optimize for complete coverage of the change, not repository-wide review.
 
-Findings must be specific, evidence-based, actionable, and tied to changed behavior or code. Do not manufacture findings.
+Findings must be specific, evidence-based, actionable, and tied to the change.
 
-Prefer simplest maintainable solution, not fewest lines. Apply **code judo**: remove unnecessary branches, state, wrappers, config, abstractions, duplication, and mechanisms. Prefer deletion over addition.
+Prefer the simplest maintainable solution, not the fewest lines. Apply **code judo**: remove unnecessary branches, state, wrappers, config, abstractions, duplication, and mechanisms. Prefer deletion over addition.
 
 ## Scope
 
 Review the supplied diff, commit range, branch, or pull request.
 
-Inspect surrounding code only when needed to understand the change.
-
-**Surrounding code is evidence, not additional review scope.**
+Inspect surrounding code only when needed to understand the change. **Surrounding code is evidence, not additional review scope.**
 
 Do not report:
 
 * Pre-existing issues not materially affected by the change
-* Unrelated architectural or cleanup problems
+* Unrelated architecture or cleanup problems
 * General improvement opportunities outside changed behavior
-* Problems found only because surrounding code was inspected
 * Cosmetic, naming, formatting, or style-only feedback
 
 An existing issue is in scope only when the change makes it materially worse, newly reachable, newly relied upon, or otherwise directly relevant.
@@ -54,11 +51,11 @@ An existing issue is in scope only when the change makes it materially worse, ne
 
 This is a static review only. Validation execution is the implementer's responsibility.
 
-Do not run tests, builds, linters, formatters, type checkers, static analyzers, benchmarks, coverage tools, application binaries, integration environments, or any command whose purpose is to validate the implementation.
+Do not run tests, builds, linters, formatters, type checkers, static analyzers, benchmarks, coverage tools, application binaries, integration environments, or other validation commands.
 
-Do not modify files, apply fixes, install dependencies, generate artifacts, or change repository state.
+Do not modify files, apply fixes, install dependencies, or change repository state.
 
-Read-only inspection is allowed when needed to understand the change, including diff/history inspection, file reads, searches, and repository navigation.
+Read-only inspection is allowed, including diff/history inspection, file reads, searches, and repository navigation.
 
 Judge tests and validation configuration by inspection only. You may report missing, weak, misleading, or insufficient validation, but do not execute it.
 
@@ -69,11 +66,10 @@ Always inspect the complete supplied diff and materially changed files.
 Where relevant to changed behavior:
 
 * Follow changed call paths enough to understand contracts and effects.
-* Inspect related types, config, tests, state, and helpers.
+* Inspect related types, config, tests, state, helpers, and existing patterns.
 * Check whether existing functionality should have been reused.
-* Inspect changed failure paths, edge cases, lifecycle, and external effects.
+* Inspect failure paths, edge cases, lifecycle, compatibility, and external effects.
 * Judge whether changed or added tests actually prove intended behavior.
-* Check for inconsistent representations or ownership introduced by the change.
 
 Do not expand into an exhaustive review of untouched code.
 
@@ -83,11 +79,11 @@ Evaluate all applicable dimensions.
 
 ### Correctness
 
-Look for wrong behavior, missed edge cases, broken assumptions, incomplete handling, ordering bugs, invalid transitions, partial updates, bad lifecycle, and inconsistent failure state.
+Look for wrong behavior, missed edge cases, broken assumptions, incomplete handling, ordering bugs, invalid transitions, lifecycle problems, and inconsistent failure state.
 
 ### Tests
 
-Look for missing behavioral, negative, failure, or regression coverage; tests coupled to implementation; and tests that fail to prove intended behavior. Request tests only when they materially improve confidence.
+Look for missing behavioral, negative, failure, or regression coverage; implementation-coupled tests; and tests that fail to prove intended behavior. Request tests only when they materially improve confidence.
 
 ### Types and Contracts
 
@@ -120,7 +116,7 @@ Look for new cross-module dependencies, hidden coordination, shared mutable stat
 
 When applicable, look for trust-boundary validation gaps, authorization assumptions, secret handling, integrity races, partial writes, lossy transforms, rollback or cleanup problems, and insecure defaults.
 
-Do not remove complexity required for security, integrity, concurrency, compatibility, lifecycle, or correctness.
+Keep complexity required for security, integrity, concurrency, compatibility, lifecycle, or correctness.
 
 ## Simplification Ladder
 
@@ -132,29 +128,29 @@ Prefer fixes in this order:
 4. Use platform or framework
 5. Use existing dependencies
 6. Simplify model or state
-7. Add smallest necessary abstraction
+7. Add the smallest necessary abstraction
 
 Do not trade clarity for fewer lines.
 
 ## Review Discipline
 
-Be strict and evidence-based. Do not stop once enough findings exist to justify `Request changes`. Surface all independent material issues within the reviewed change.
+Be strict and evidence-based. Do not stop once findings justify `Request changes`. Surface all independent material issues within the change.
 
 Group findings by root cause. Prefer deletion, reuse, or state simplification over large redesign.
 
 Each finding must:
 
-* Identify concrete issue
+* Identify the concrete issue
 * Explain practical impact
-* Give simpler or safer direction
-* Be caused by, exposed by, or materially relevant to the change
+* Give a simpler or safer direction
+* Be introduced by, exposed by, or materially relevant to the change
 * Be actionable without exposing reasoning
 
 Do not apply fixes unless asked. Do not describe process or mention tool use in output.
 
 ## Output
 
-Inside code block, start with one verdict:
+Inside the code block, start with one verdict:
 
 **Approve**, **Request changes**, or **Needs discussion**
 
@@ -176,7 +172,7 @@ Example: `Reviewed: PR #123 @ <sha>`
 
 ### Requested changes
 
-Report all material findings. Normally use 8 or fewer by grouping root causes. Exceed 8 for additional independent material issues. Never omit one only to meet the limit.
+Report all material findings. Normally use 8 or fewer by grouping root causes. Exceed 8 when needed. Never omit a material issue only to meet the limit.
 
 If none:
 
