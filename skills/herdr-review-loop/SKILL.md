@@ -35,6 +35,8 @@ case "$(uname -s)" in *MINGW*|*MSYS*|*CYGWIN*) win=1 ;; *) win=0 ;; esac
 
 When `win=1`, skip `herdr agent start` for pi and go straight to the pane-run path in the dispatcher procedure. The same applies to any kind whose CLI is installed as a `.cmd` shim (npm and scoop installs). The pane-run path also serves as the fallback on any platform when `agent start` fails for another reason.
 
+`scripts/start-reviewer.sh` next to this file implements this entire decision tree. Prefer it; the manual commands in the dispatcher procedure are the fallback when the script cannot run.
+
 ## Contracts
 
 ### Reviewer name
@@ -45,20 +47,13 @@ The same task always maps to the same reviewer name. Later rounds reuse the live
 
 ### Findings file
 
-One file per round, never overwritten:
+One file per round, never overwritten. Resolve it with `scripts/findings-path.sh` next to this file:
 
 ```bash
-slug=...    # slug without the review- prefix
-round=...   # 1 for the first round, then +1 per re-review
-if git rev-parse --is-inside-work-tree >/dev/null 2>&1 \
-   && mkdir -p .tmp/reviews && git check-ignore -q .tmp/reviews/probe; then
-  dir="$(git rev-parse --show-toplevel)/.tmp/reviews"
-else
-  dir="${TMPDIR:-/tmp}/herdr-review-$slug"
-fi
-mkdir -p "$dir"
-out="$dir/$slug-r$round.md"
+out="$(bash "<skill-dir>/scripts/findings-path.sh" --slug "$slug" --round "$round")"
 ```
+
+It prints one absolute path: `<repo>/.tmp/reviews/<slug>-r<round>.md` when the repo's `.tmp/` is gitignored, otherwise `${TMPDIR:-/tmp}/herdr-review-<slug>/`. By hand the same rule is: inside a git worktree with ignored `.tmp/` use `.tmp/reviews`, else the global temp dir.
 
 Use absolute paths in all messages.
 
@@ -104,17 +99,19 @@ A needs-discussion style verdict from the review skill maps to `CHANGES_REQUESTE
 
 1. Guard. Pick the review skill (default `deep-diff-review` unless the user says otherwise), the reviewer kind (default `pi`), and model plus thinking. If the user did not specify model or thinking, use the kind's defaults and say so in the request.
 
-2. Compute the slug, round number, and findings path.
+2. Compute the slug and round number, then resolve the findings path per `Findings file`.
 
-3. Reuse check:
+3. Start or reuse the reviewer. Run `scripts/start-reviewer.sh` next to this file, resolving the path against this skill's directory:
 
 ```bash
-herdr agent list | jq -r '.result.agents[] | select(.name=="review-<slug>") | "\(.pane_id) \(.agent_status)"'
+bash "<skill-dir>/scripts/start-reviewer.sh" --slug "$slug" --kind pi --model <model> --thinking <thinking>
 ```
 
-A live entry means reuse it as the prompt target. If `agent_status` is `blocked`, inspect it with `herdr agent get` and `herdr agent read` first; clear a dialog with `herdr agent send-keys` only when you understand it.
+The script is idempotent and encodes every rule above: reuse probe by reviewer name, Windows detection, sibling-pane split preserving cwd and focus, `agent start`, automatic pane-run fallback with detection wait, and renaming so later rounds reuse the same reviewer. Read `TARGET`, `PANE_ID`, and `REUSED` from its `KEY=VALUE` stdout lines; `$TARGET` is the prompt target for every send below. Pass extra native CLI args after `--`; translate model and thinking into the kind's own flags and ask the user when unknown.
 
-4. Otherwise start one.
+If a reused reviewer is `blocked`, inspect it with `herdr agent get` and `herdr agent read` first; clear a dialog with `herdr agent send-keys` only when you understand it, then rerun the script.
+
+4. Manual fallback, only when the script itself cannot run.
 
 Non-Windows: split a sibling pane, preserving cwd and focus, read `.result.pane.pane_id` from the response, then start the agent with the requested model and thinking as native flags after `--`:
 
@@ -146,7 +143,7 @@ Translate model and thinking into the kind's own flags; ask the user when unknow
 5. Send the request. No `--wait`: you are not waiting for the review.
 
 ```bash
-herdr agent prompt review-<slug> "$(cat <<'EOF'
+herdr agent prompt "$TARGET" "$(cat <<'EOF'
 <request text from Contracts>
 EOF
 )"
@@ -167,7 +164,7 @@ Re-review <scope>. Write findings to <new absolute path>. Same reply
 format as before.
 ```
 
-- `FAILED`: diagnose with `herdr agent read review-<slug>`. Fix the stated reason (missing skill, wrong model) or restart the reviewer under the same name if it exited, then resend. If you cannot resolve it, report to the user.
+- `FAILED`: diagnose with `herdr agent read "$TARGET"`. Fix the stated reason (missing skill, wrong model) or restart the reviewer under the same name if it exited, then resend. If you cannot resolve it, report to the user.
 
 ## Reviewer procedure
 
@@ -193,6 +190,7 @@ herdr agent prompt <dispatcher-pane-id> "REVIEW CHANGES_REQUESTED <path>"
 
 ## Rules
 
+- Prefer the `scripts/` helpers over hand-typed commands; they encode the platform rules. Use the manual commands only when a helper fails.
 - Never use `--wait` on dispatch or reply sends. The sender always ends its turn right after a successful send; holding the turn open stalls delivery of the callback.
 - One reviewer per task slug. Reuse it across rounds; start a new one only when it is no longer live.
 - New findings file per round; never overwrite a previous round.
