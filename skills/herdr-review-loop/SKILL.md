@@ -62,13 +62,16 @@ instead of reviewing.
 
 Write your complete findings as Markdown to: <absolute path>
 
-When done, send exactly one line back to the dispatcher, then end your turn:
+When done, send exactly one line back to the dispatcher pane
+<dispatcher-pane-id>, using the send-prompt.sh helper from this skill, then
+end your turn:
 
-  herdr agent prompt <dispatcher-pane-id> "REVIEW <VERDICT> <path>"
+  REVIEW <VERDICT> <path>
 
 VERDICT is APPROVED, CHANGES_REQUESTED, or FAILED. For FAILED, put a short
 reason in place of the path. Then end your turn and wait; the next round
-arrives as a new prompt in this session.
+arrives as a new prompt in this session. Do not call herdr commands
+directly; the helper confirms delivery.
 ```
 
 Reviewer reply, always one line:
