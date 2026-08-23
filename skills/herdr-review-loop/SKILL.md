@@ -63,10 +63,10 @@ instead of reviewing.
 Write your complete findings as Markdown to: <absolute path>
 
 When done, send exactly one line back to the dispatcher pane
-<dispatcher-pane-id>, using the send-prompt.sh helper from this skill, then
-end your turn:
+<dispatcher-pane-id>, using exactly this helper script (do not search for
+any other copy):
 
-  REVIEW <VERDICT> <path>
+  bash "<send-prompt-path>" --target <dispatcher-pane-id> "REVIEW <VERDICT> <path>"
 
 VERDICT is APPROVED, CHANGES_REQUESTED, or FAILED. For FAILED, put a short
 reason in place of the path. Then end your turn and wait; the next round
@@ -98,16 +98,23 @@ bash "<skill-dir>/scripts/start-reviewer.sh" --slug "$slug" --kind pi --model <m
 
 Read `TARGET`, `PANE_ID`, and `REUSED` from the output; `$TARGET` is the prompt target for every send below.
 
-4. Write the request to a file beside the findings path and send it:
+4. Resolve the helper's absolute path, write the request with `<send-prompt-path>` substituted, and send:
+
+```bash
+helper="<skill-dir>/scripts/send-prompt.sh"
+helper="$(cd "$(dirname "$helper")" && pwd -P)/$(basename "$helper")"
+```
 
 ```bash
 req="$(dirname "$out")/$slug-r$round.request.txt"
 cat > "$req" <<'EOF'
-<request text from Contracts>
+<request text from Contracts, with <send-prompt-path> set to the resolved helper path>
 EOF
 
-bash "<skill-dir>/scripts/send-prompt.sh" --target "$TARGET" --file "$req"
+bash "$helper" --target "$TARGET" --file "$req"
 ```
+
+Carrying the exact helper path spares the reviewer from locating the skill directory; the request must be self-sufficient.
 
 `STATUS=CONFIRMED` in any variant means the reviewer started processing. `STATUS=BLOCKED` or `STATUS=UNCONFIRMED` means tell the user; do not end the turn silently expecting a reply that will never come.
 
@@ -130,7 +137,7 @@ format as before.
 
 You receive the request as a prompt in your pane.
 
-1. Parse the request: review skill, scope, output path, dispatcher pane id, expected model and thinking.
+1. Parse the request: review skill, scope, output path, dispatcher pane id, expected model and thinking, and the helper script path.
 
 2. Verify you are running the requested model and thinking. If not, reply `REVIEW FAILED wrong-model` and end your turn. Never review silently with a different setup.
 
@@ -140,10 +147,10 @@ You receive the request as a prompt in your pane.
 
 5. Write the full findings to the given path, creating parent directories as needed. Put the verdict on the first line, and keep the skill's own output format inside the file.
 
-6. Send the reply, then end your turn at once:
+6. Send the reply, then end your turn at once. Use the exact helper path from the request; fall back to this skill's `scripts/send-prompt.sh` only if that path does not exist:
 
 ```bash
-bash "<skill-dir>/scripts/send-prompt.sh" --target <dispatcher-pane-id> "REVIEW CHANGES_REQUESTED <path>"
+bash "<helper path from the request>" --target <dispatcher-pane-id> "REVIEW CHANGES_REQUESTED <path>"
 ```
 
 Confirm `STATUS=CONFIRMED` in some variant before ending your turn; otherwise retry once or record the failure in the findings file and tell the user.
