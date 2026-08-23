@@ -60,7 +60,9 @@ You must be running model "<model>" with thinking "<thinking>". If your
 current model or thinking level differs, reply REVIEW FAILED wrong-model
 instead of reviewing.
 
-Write your complete findings as Markdown to: <absolute path>
+Write your complete findings as Markdown to: <absolute path>.
+Always write the file, even when approving; non-blocking suggestions
+belong there too.
 
 When done, send exactly one line back to the dispatcher pane
 <dispatcher-pane-id>, using exactly this helper script (do not search for
@@ -120,9 +122,9 @@ Carrying the exact helper path spares the reviewer from locating the skill direc
 
 5. End your turn immediately. Tell the user the reviewer is running and that you will continue when the reply lands. Do not poll, sleep, or read the reviewer's pane.
 
-6. When the reply arrives, read the findings file.
+6. When the reply arrives, read the findings file, whatever the verdict: an `APPROVED` review can still carry non-blocking suggestions.
 
-- `APPROVED`: report to the user. The loop is done.
+- `APPROVED`: the loop is done. Apply the suggestions that are clearly worth it, and list the rest for the user; do not start another review round for them. Report the verdict and what you did with the suggestions.
 - `CHANGES_REQUESTED`: address the findings, bump the round, then repeat steps 2 to 5 with the same reviewer:
 
 ```
