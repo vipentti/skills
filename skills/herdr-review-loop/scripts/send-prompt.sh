@@ -36,7 +36,10 @@ while [ $# -gt 0 ]; do
     --target)  TARGET="${2:-}"; shift 2 ;;
     --file)    FILE="${2:-}";   shift 2 ;;
     -h|--help) usage ;;
-    *) TEXTS+=("$1"); shift ;;
+    *)
+      TEXTS+=("$1"); shift
+      [ ${#TEXTS[@]} -le 16 ] || die "too many arguments; pass --file PATH or one TEXT argument"
+      ;;
   esac
 done
 
