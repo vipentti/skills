@@ -21,7 +21,7 @@ All Herdr interaction in this loop goes through the helper scripts next to this 
 - `send-prompt.sh`: submit a prompt and confirm the target actually started processing; retries with an Enter nudge and one resend when a submission was swallowed.
 - `findings-path.sh`: resolve an absolute findings-file path.
 
-Every script prints `KEY=VALUE` lines on stdout, logs to stderr, exits nonzero on failure, and verifies it runs inside Herdr (`HERDR_ENV=1`). Never hand-type `herdr` commands for this loop. If a script fails, report its stderr to the user and stop; do not improvise.
+The Herdr-facing scripts print `KEY=VALUE` lines on stdout, log to stderr, exit nonzero on failure, and verify they run inside Herdr (`HERDR_ENV=1`). `start-reviewer.sh` always returns `CURRENT_PANE_ID`, `TARGET`, `REVIEWER_PANE_ID`, the compatibility alias `PANE_ID`, and `REUSED`. `send-prompt.sh` always returns `CURRENT_PANE_ID`, `TARGET`, `STATUS`, and `STATE`. `findings-path.sh` is intentionally path-only because it does not control Herdr. Never hand-type `herdr` commands for this loop. If a script fails, report its stderr to the user and stop; do not improvise.
 
 ## Contracts
 
@@ -101,9 +101,9 @@ A needs-discussion style verdict from the review skill maps to `CHANGES_REQUESTE
 bash "<skill-dir>/scripts/start-reviewer.sh" --slug "$slug" --kind pi --model <model> --thinking <thinking>
 ```
 
-Read `TARGET`, `PANE_ID`, and `REUSED` from the output; `$TARGET` is the prompt target for every send below.
+Read `CURRENT_PANE_ID`, `TARGET`, `REVIEWER_PANE_ID`, `PANE_ID`, and `REUSED` from the output. Use `$CURRENT_PANE_ID` as `<dispatcher-pane-id>` in the request template, and use `$TARGET` as the reviewer prompt target for every send below. `PANE_ID` is retained only as a compatibility alias for `REVIEWER_PANE_ID`.
 
-4. Resolve the helper's absolute path, write the request with `<send-prompt-path>` substituted, and send:
+4. Resolve the helper's absolute path, write the request with `<send-prompt-path>` and `<dispatcher-pane-id>` substituted, and send:
 
 ```bash
 helper="<skill-dir>/scripts/send-prompt.sh"
@@ -113,7 +113,7 @@ helper="$(cd "$(dirname "$helper")" && pwd -P)/$(basename "$helper")"
 ```bash
 req="$(dirname "$out")/$slug-r$round.request.txt"
 cat > "$req" <<'EOF'
-<request text from Contracts, with <send-prompt-path> set to the resolved helper path>
+<request text from Contracts, with <send-prompt-path> set to the resolved helper path and <dispatcher-pane-id> set to $CURRENT_PANE_ID>
 EOF
 
 bash "$helper" --target "$TARGET" --file "$req"
