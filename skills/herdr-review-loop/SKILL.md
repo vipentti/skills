@@ -70,16 +70,19 @@ any other copy):
 
   bash "<send-prompt-path>" --target <dispatcher-pane-id> "REVIEW <VERDICT> <path>"
 
-VERDICT is APPROVED, CHANGES_REQUESTED, or FAILED. For FAILED, put a short
-reason in place of the path. Then end your turn and wait; the next round
-arrives as a new prompt in this session. Do not call herdr commands
-directly; the helper confirms delivery.
+VERDICT is APPROVED, APPROVED_WITH_SUGGESTIONS, CHANGES_REQUESTED, or
+FAILED. Use APPROVED_WITH_SUGGESTIONS when the review passes but includes
+non-blocking suggestions. Use CHANGES_REQUESTED when any finding must be
+fixed before approval. For FAILED, put a short reason in place of the path.
+Then end your turn and wait; the next round arrives as a new prompt in this
+session. Do not call herdr commands directly; the helper confirms delivery.
 ```
 
 Reviewer reply, always one line:
 
 ```
 REVIEW APPROVED <path>
+REVIEW APPROVED_WITH_SUGGESTIONS <path>
 REVIEW CHANGES_REQUESTED <path>
 REVIEW FAILED <short-reason>
 ```
@@ -122,9 +125,10 @@ Carrying the exact helper path spares the reviewer from locating the skill direc
 
 5. End your turn immediately. Tell the user the reviewer is running and that you will continue when the reply lands. Do not poll, sleep, or read the reviewer's pane.
 
-6. When the reply arrives, read the findings file, whatever the verdict: an `APPROVED` review can still carry non-blocking suggestions.
+6. When the reply arrives, read the findings file, whatever the verdict.
 
-- `APPROVED`: the loop is done. Apply the suggestions that are clearly worth it, and list the rest for the user; do not start another review round for them. Report the verdict and what you did with the suggestions.
+- `APPROVED`: the loop is done. No suggestions are expected, but handle any suggestions in the file as non-blocking and report what you did with them.
+- `APPROVED_WITH_SUGGESTIONS`: the loop is done. Apply the suggestions that are clearly worth it, and list the rest for the user; do not start another review round for them.
 - `CHANGES_REQUESTED`: address the findings, bump the round, then repeat steps 2 to 5 with the same reviewer:
 
 ```
@@ -145,9 +149,9 @@ You receive the request as a prompt in your pane.
 
 3. Load the named review skill and follow it. If it is not installed, reply `REVIEW FAILED skill-not-installed`. Do not substitute a different methodology silently.
 
-4. Perform the review per that skill: static inspection, findings scoped to the change, and no validation commands unless the skill allows them.
+4. Perform the review per that skill: static inspection, findings scoped to the change, and no validation commands unless the skill allows them. Map the result to the transport verdict: use `APPROVED` with no suggestions, `APPROVED_WITH_SUGGESTIONS` when only non-blocking suggestions remain, `CHANGES_REQUESTED` when any fix is required, and `FAILED` when the review cannot be completed. Keep the named review skill's own verdict and output format in the findings file.
 
-5. Write the full findings to the given path, creating parent directories as needed. Put the verdict on the first line, and keep the skill's own output format inside the file.
+5. Write the full findings to the given path, creating parent directories as needed. Put the review skill's verdict on the first line, and keep its output format inside the file.
 
 6. Send the reply, then end your turn at once. Use the exact helper path from the request; fall back to this skill's `scripts/send-prompt.sh` only if that path does not exist:
 
