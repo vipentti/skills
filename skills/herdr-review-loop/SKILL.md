@@ -13,29 +13,15 @@ Two agents cooperate through Herdr:
 
 Neither side polls while waiting. The dispatcher ends its turn right after dispatching; the reviewer's reply arrives as the next prompt. The reviewer ends its turn right after replying. The reply itself is the wake-up.
 
-Follow the `herdr` skill for CLI discovery, pane etiquette, and safety rules. This skill only defines the loop protocol.
+## Scripts
 
-## Guard
+All Herdr interaction in this loop goes through the helper scripts next to this file (resolve their paths against this skill's directory):
 
-Both roles run this first and stop if it fails:
+- `start-reviewer.sh`: idempotently start or reuse a named reviewer agent. Handles reuse probes, platform differences (including Windows, where `herdr agent start --kind pi` cannot launch `.cmd` shims such as `pi.cmd`, so it splits a pane, runs the CLI directly, waits for detection, and renames), and fallbacks.
+- `send-prompt.sh`: submit a prompt and confirm the target actually started processing; retries with an Enter nudge and one resend when a submission was swallowed.
+- `findings-path.sh`: resolve an absolute findings-file path.
 
-```bash
-test "${HERDR_ENV:-}" = 1
-```
-
-## Windows and pi
-
-On Windows, `herdr agent start --kind pi` does not work: Herdr spawns the bare executable `pi`, but Windows installs expose `pi.cmd`, so the spawn fails and the pane never reaches a ready agent. Do not retry it and do not debug it; agents get stuck in that loop.
-
-Detect Windows before starting any reviewer:
-
-```bash
-case "$(uname -s)" in *MINGW*|*MSYS*|*CYGWIN*) win=1 ;; *) win=0 ;; esac
-```
-
-When `win=1`, skip `herdr agent start` for pi and go straight to the pane-run path in the dispatcher procedure. The same applies to any kind whose CLI is installed as a `.cmd` shim (npm and scoop installs). The pane-run path also serves as the fallback on any platform when `agent start` fails for another reason.
-
-`scripts/start-reviewer.sh` next to this file implements this entire decision tree. Prefer it; the manual commands in the dispatcher procedure are the fallback when the script cannot run.
+Every script prints `KEY=VALUE` lines on stdout, logs to stderr, exits nonzero on failure, and verifies it runs inside Herdr (`HERDR_ENV=1`). Never hand-type `herdr` commands for this loop. If a script fails, report its stderr to the user and stop; do not improvise.
 
 ## Contracts
 
@@ -43,17 +29,17 @@ When `win=1`, skip `herdr agent start` for pi and go straight to the pane-run pa
 
 Derive a stable slug from the repo directory name plus branch or task: lowercase, replace non-alphanumeric runs with `-`, trim dashes, truncate to 25 chars. Reviewer name is `review-<slug>`: max 32 chars, matching `[a-z][a-z0-9_-]{0,31}`.
 
-The same task always maps to the same reviewer name. Later rounds reuse the live reviewer instead of starting a new one. Names are unique across the whole Herdr session, so include the repo name to avoid collisions between repos.
+The same task always maps to the same reviewer name. Later rounds reuse the live reviewer instead of starting a new one; `start-reviewer.sh` does this automatically.
 
 ### Findings file
 
-One file per round, never overwritten. Resolve it with `scripts/findings-path.sh` next to this file:
+One file per round, never overwritten. Resolve it with:
 
 ```bash
 out="$(bash "<skill-dir>/scripts/findings-path.sh" --slug "$slug" --round "$round")"
 ```
 
-It prints one absolute path: `<repo>/.tmp/reviews/<slug>-r<round>.md` when the repo's `.tmp/` is gitignored, otherwise `${TMPDIR:-/tmp}/herdr-review-<slug>/`. By hand the same rule is: inside a git worktree with ignored `.tmp/` use `.tmp/reviews`, else the global temp dir.
+It prints one absolute path: `<repo>/.tmp/reviews/<slug>-r<round>.md` when the repo's `.tmp/` is gitignored, otherwise `${TMPDIR:-/tmp}/herdr-review-<slug>/`.
 
 Use absolute paths in all messages.
 
@@ -97,66 +83,37 @@ A needs-discussion style verdict from the review skill maps to `CHANGES_REQUESTE
 
 ## Dispatcher procedure
 
-1. Guard. Pick the review skill (default `deep-diff-review` unless the user says otherwise), the reviewer kind (default `pi`), and model plus thinking. If the user did not specify model or thinking, use the kind's defaults and say so in the request.
+1. Pick the review skill (default `deep-diff-review` unless the user says otherwise), the reviewer kind (default `pi`), and model plus thinking. If the user did not specify model or thinking, use the kind's defaults and say so in the request.
 
 2. Compute the slug and round number, then resolve the findings path per `Findings file`.
 
-3. Start or reuse the reviewer. Run `scripts/start-reviewer.sh` next to this file, resolving the path against this skill's directory:
+3. Start or reuse the reviewer:
 
 ```bash
 bash "<skill-dir>/scripts/start-reviewer.sh" --slug "$slug" --kind pi --model <model> --thinking <thinking>
 ```
 
-The script is idempotent and encodes every rule above: reuse probe by reviewer name, Windows detection, sibling-pane split preserving cwd and focus, `agent start`, automatic pane-run fallback with detection wait, and renaming so later rounds reuse the same reviewer. Read `TARGET`, `PANE_ID`, and `REUSED` from its `KEY=VALUE` stdout lines; `$TARGET` is the prompt target for every send below. Pass extra native CLI args after `--`; translate model and thinking into the kind's own flags and ask the user when unknown.
+Read `TARGET`, `PANE_ID`, and `REUSED` from the output; `$TARGET` is the prompt target for every send below.
 
-If a reused reviewer is `blocked`, inspect it with `herdr agent get` and `herdr agent read` first; clear a dialog with `herdr agent send-keys` only when you understand it, then rerun the script.
-
-4. Manual fallback, only when the script itself cannot run.
-
-Non-Windows: split a sibling pane, preserving cwd and focus, read `.result.pane.pane_id` from the response, then start the agent with the requested model and thinking as native flags after `--`:
+4. Write the request to a file beside the findings path and send it:
 
 ```bash
-herdr pane split --current --direction right --cwd "$PWD" --no-focus
-herdr agent start review-<slug> --kind pi --pane <pane-id> --timeout 60000 -- --model <model> --thinking <thinking>
-```
-
-Windows with pi (see "Windows and pi" above), or any platform where `agent start` failed: split a fresh sibling pane, because a failed `agent start` can leave the pane dirty, then run the agent as a plain command and wait for Herdr to detect it:
-
-```bash
-herdr pane split --current --direction right --cwd "$PWD" --no-focus
-herdr pane run <pane-id> "pi --model <model> --thinking <thinking>"
-for i in $(seq 1 30); do
-  herdr agent get <pane-id> >/dev/null 2>&1 && break
-  sleep 2
-done
-herdr agent get <pane-id>
-```
-
-Then name it so later rounds can reuse it by name:
-
-```bash
-herdr agent rename <pane-id> review-<slug>
-```
-
-Translate model and thinking into the kind's own flags; ask the user when unknown. If detection never succeeds, report and stop.
-
-5. Send the request. No `--wait`: you are not waiting for the review.
-
-```bash
-herdr agent prompt "$TARGET" "$(cat <<'EOF'
+req="$(dirname "$out")/$slug-r$round.request.txt"
+cat > "$req" <<'EOF'
 <request text from Contracts>
 EOF
-)"
+
+bash "<skill-dir>/scripts/send-prompt.sh" --target "$TARGET" --file "$req"
 ```
 
-If the send errors (`agent_blocked`, `agent_prompt_stalled`), inspect `herdr agent get` and `herdr agent read`, resolve, and resend once.
+`STATUS=CONFIRMED` in any variant means the reviewer started processing. `STATUS=BLOCKED` or `STATUS=UNCONFIRMED` means tell the user; do not end the turn silently expecting a reply that will never come.
 
-6. End your turn immediately. Tell the user the reviewer is running and that you will continue when the reply lands. Do not poll, sleep, or read the reviewer's pane.
+5. End your turn immediately. Tell the user the reviewer is running and that you will continue when the reply lands. Do not poll, sleep, or read the reviewer's pane.
 
-7. When the reply arrives, read the findings file.
+6. When the reply arrives, read the findings file.
 
-- `APPROVED`: report to the user. The loop is done. Leave the reviewer pane open unless the user asks to close it (`herdr pane close <pane-id>`).
-- `CHANGES_REQUESTED`: address the findings, bump the round, then send the next request to the same reviewer and end your turn again:
+- `APPROVED`: report to the user. The loop is done.
+- `CHANGES_REQUESTED`: address the findings, bump the round, then repeat steps 2 to 5 with the same reviewer:
 
 ```
 Round <N>: the fixes for the previous findings are in the working tree.
@@ -164,13 +121,13 @@ Re-review <scope>. Write findings to <new absolute path>. Same reply
 format as before.
 ```
 
-- `FAILED`: diagnose with `herdr agent read "$TARGET"`. Fix the stated reason (missing skill, wrong model) or restart the reviewer under the same name if it exited, then resend. If you cannot resolve it, report to the user.
+- `FAILED`: fix the stated reason (missing skill, wrong model), rerun `start-reviewer.sh` to get a healthy reviewer, and resend. If you cannot resolve it, report to the user.
 
 ## Reviewer procedure
 
 You receive the request as a prompt in your pane.
 
-1. Guard. Parse the request: review skill, scope, output path, dispatcher pane id, expected model and thinking.
+1. Parse the request: review skill, scope, output path, dispatcher pane id, expected model and thinking.
 
 2. Verify you are running the requested model and thinking. If not, reply `REVIEW FAILED wrong-model` and end your turn. Never review silently with a different setup.
 
@@ -180,21 +137,20 @@ You receive the request as a prompt in your pane.
 
 5. Write the full findings to the given path, creating parent directories as needed. Put the verdict on the first line, and keep the skill's own output format inside the file.
 
-6. Send the reply, then end your turn at once. No `--wait`:
+6. Send the reply, then end your turn at once:
 
 ```bash
-herdr agent prompt <dispatcher-pane-id> "REVIEW CHANGES_REQUESTED <path>"
+bash "<skill-dir>/scripts/send-prompt.sh" --target <dispatcher-pane-id> "REVIEW CHANGES_REQUESTED <path>"
 ```
+
+Confirm `STATUS=CONFIRMED` in some variant before ending your turn; otherwise retry once or record the failure in the findings file and tell the user.
 
 7. Later rounds arrive as new prompts in this session. Keep context: verify earlier blockers are actually fixed, but focus each round on the delta.
 
 ## Rules
 
-- Prefer the `scripts/` helpers over hand-typed commands; they encode the platform rules. Use the manual commands only when a helper fails.
-- Never use `--wait` on dispatch or reply sends. The sender always ends its turn right after a successful send; holding the turn open stalls delivery of the callback.
-- One reviewer per task slug. Reuse it across rounds; start a new one only when it is no longer live.
+- Sends always go through `send-prompt.sh`. A confirmed send means the target started processing; the sender then ends its turn immediately. Never hold the turn open waiting for the other side to finish; the callback is the wake-up, and holding the turn stalls its delivery.
+- One reviewer per task slug. Reuse it across rounds; `start-reviewer.sh` handles this.
 - New findings file per round; never overwrite a previous round.
-- Prompt by agent name or pane id parsed from `herdr` JSON, never by sidebar position or assumption.
-- On Windows with pi, never attempt or retry `herdr agent start --kind pi`; use the pane-run path immediately.
 - Do not close workspaces, tabs, or panes you did not create. The reviewer pane belongs to the loop; close it only when the user asks.
-- If the dispatcher's pane was moved, its old pane id stops resolving for other clients; the latest request always carries the current return target.
+- Script failure is a stop-and-report event, not an invitation to hand-roll Herdr commands.
