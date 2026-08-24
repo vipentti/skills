@@ -8,7 +8,7 @@
 #                     [--timeout MS] [-- EXECUTABLE_ARGS...]
 #
 # Output: KEY=VALUE lines on stdout, logs on stderr.
-#   CURRENT_PANE_ID=wX:pY   pane running this script, usually the dispatcher
+#   IMPLEMENTER_PANE_ID=wX:pY pane running this script, usually the dispatcher
 #   TARGET=name-or-pane-id  pass this to `send-prompt.sh`
 #   REVIEWER_PANE_ID=wX:pY  pane hosting the reviewer
 #   PANE_ID=wX:pY           compatibility alias for REVIEWER_PANE_ID
@@ -61,12 +61,12 @@ printf '%s' "$NAME" | grep -Eq '^[a-z][a-z0-9_-]{0,31}$' \
 
 [ "${HERDR_ENV:-}" = 1 ] || die "HERDR_ENV != 1; this agent is not running inside Herdr"
 command -v herdr >/dev/null 2>&1 || die "herdr not found on PATH"
-CURRENT_PANE_ID="${HERDR_PANE_ID:-}"
-[ -n "$CURRENT_PANE_ID" ] || die "HERDR_PANE_ID is missing; cannot report the current pane"
+IMPLEMENTER_PANE_ID="${HERDR_PANE_ID:-}"
+[ -n "$IMPLEMENTER_PANE_ID" ] || die "HERDR_PANE_ID is missing; cannot report the implementer pane"
 
 report() { # $1=target $2=reviewer_pane_id $3=reused
-  printf 'CURRENT_PANE_ID=%s\nTARGET=%s\nREVIEWER_PANE_ID=%s\nPANE_ID=%s\nREUSED=%s\n' \
-    "$CURRENT_PANE_ID" "$1" "$2" "$2" "$3"
+  printf 'IMPLEMENTER_PANE_ID=%s\nTARGET=%s\nREVIEWER_PANE_ID=%s\nPANE_ID=%s\nREUSED=%s\n' \
+    "$IMPLEMENTER_PANE_ID" "$1" "$2" "$2" "$3"
 }
 
 # Read a pane id out of herdr JSON. Prefers jq; falls back to a narrow scan,
