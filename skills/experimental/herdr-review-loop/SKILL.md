@@ -20,8 +20,9 @@ All Herdr interaction in this loop goes through the helper scripts next to this 
 - `start-reviewer.sh`: idempotently start or reuse a named reviewer agent. Handles reuse probes, platform differences (including Windows, where `herdr agent start --kind pi` cannot launch `.cmd` shims such as `pi.cmd`, so it splits a pane, runs the CLI directly, waits for detection, and renames), and fallbacks.
 - `send-prompt.sh`: submit a prompt and confirm the target actually started processing; retries with an Enter nudge and one resend when a submission was swallowed.
 - `findings-path.sh`: resolve an absolute findings-file path.
+- `send-review-request.sh`: orchestrated dispatcher-side request. Performs the entire request step in one command: resolves the findings path (via `findings-path.sh`), starts or reuses the reviewer (via `start-reviewer.sh`), composes the full review-request message from the template at `templates/review-request.md` (fallback: built-in template), substitutes the CORRECT pane ids itself (its own `CURRENT_PANE_ID` as `<dispatcher-pane-id>` inside the message and `TARGET` as the `send-prompt.sh` destination), writes the request file, sends it via `send-prompt.sh`, and confirms `STATUS=CONFIRMED`. Adds `--dry-run` to print the fully composed request and the target it would use without sending.
 
-The Herdr-facing scripts print `KEY=VALUE` lines on stdout, log to stderr, exit nonzero on failure, and verify they run inside Herdr (`HERDR_ENV=1`). `start-reviewer.sh` always returns `CURRENT_PANE_ID`, `TARGET`, `REVIEWER_PANE_ID`, the compatibility alias `PANE_ID`, and `REUSED`. `send-prompt.sh` always returns `CURRENT_PANE_ID`, `TARGET`, `STATUS`, and `STATE`. `findings-path.sh` is intentionally path-only because it does not control Herdr. Never hand-type `herdr` commands for this loop. If a script fails, report its stderr to the user and stop; do not improvise.
+The Herdr-facing scripts print `KEY=VALUE` lines on stdout, log to stderr, exit nonzero on failure, and verify they run inside Herdr (`HERDR_ENV=1`). `start-reviewer.sh` always returns `CURRENT_PANE_ID`, `TARGET`, `REVIEWER_PANE_ID`, the compatibility alias `PANE_ID`, and `REUSED`. `send-prompt.sh` always returns `CURRENT_PANE_ID`, `TARGET`, `STATUS`, and `STATE`. `send-review-request.sh` returns `CURRENT_PANE_ID`, `TARGET`, `REVIEWER_PANE_ID`, `PANE_ID`, `REUSED`, `FINDINGS_PATH`, `REQUEST_FILE`, `STATUS`, and `STATE` (`STATUS=DRY_RUN` in dry-run). `findings-path.sh` is intentionally path-only because it does not control Herdr. Never hand-type `herdr` commands for this loop. If a script fails, report its stderr to the user and stop; do not improvise.
 
 ## Contracts
 
@@ -29,7 +30,7 @@ The Herdr-facing scripts print `KEY=VALUE` lines on stdout, log to stderr, exit 
 
 Derive a stable slug from the repo directory name plus branch or task: lowercase, replace non-alphanumeric runs with `-`, trim dashes, truncate to 25 chars. Reviewer name is `review-<slug>`: max 32 chars, matching `[a-z][a-z0-9_-]{0,31}`.
 
-The same task always maps to the same reviewer name. Later rounds reuse the live reviewer instead of starting a new one; `start-reviewer.sh` does this automatically.
+The same task always maps to the same reviewer name. Later rounds reuse the live reviewer instead of starting a new one; `start-reviewer.sh` (and `send-review-request.sh` which calls it) does this automatically.
 
 ### Findings file
 
@@ -41,11 +42,11 @@ out="$(bash "<skill-dir>/scripts/findings-path.sh" --slug "$slug" --round "$roun
 
 It prints one absolute path: `<repo>/.tmp/reviews/<slug>-r<round>.md` when the repo's `.tmp/` is gitignored, otherwise `${TMPDIR:-/tmp}/herdr-review-<slug>/`.
 
-Use absolute paths in all messages.
+Use absolute paths in all messages. `send-review-request.sh` resolves this path automatically when `--findings-path` is omitted; pass `--findings-path` only to override.
 
 ### Messages
 
-Review request, dispatcher to reviewer:
+The review-request message template lives in this skill at `templates/review-request.md` (with a built-in fallback in `send-review-request.sh`). The template uses `{{TASK}}`, `{{REVIEW_SKILL}}`, `{{SCOPE}}`, `{{MODEL}}`, `{{THINKING}}`, `{{FINDINGS_PATH}}`, `{{DISPATCHER_PANE_ID}}`, and `{{SEND_PROMPT_PATH}}` placeholders. The contracts example below is the rendered form:
 
 ```
 You are the reviewer for task "<task description>".
@@ -89,47 +90,50 @@ REVIEW FAILED <short-reason>
 
 A needs-discussion style verdict from the review skill maps to `CHANGES_REQUESTED`, with the open questions inside the file.
 
+### Wrong-target failure mode eliminated by `send-review-request.sh`
+
+Before `send-review-request.sh`, the dispatcher procedure required the implementer (human or agent) to run `start-reviewer.sh`, read its `KEY=VALUE` output, and then manually substitute pane ids into the message and pick the send target. The concrete failure was selecting the wrong target from that output:
+
+- `start-reviewer.sh` prints both `CURRENT_PANE_ID` (the dispatcher's own pane, e.g. `wA5:p2`) and `TARGET`/`REVIEWER_PANE_ID` (the reviewer, e.g. `review-my-slug` or `wA5:p3`). The request template needs `CURRENT_PANE_ID` inside the message body (so the reviewer knows where to reply) and `TARGET` as the destination for `send-prompt.sh`. The implementer could, and did, invert these: embedding `TARGET` into the message as `<dispatcher-pane-id>` (so the reviewer replies to itself or to a stale name) or invoking `send-prompt.sh --target "$CURRENT_PANE_ID"` (sending the request to itself), or picking `REVIEWER_PANE_ID` when `TARGET` was the correct stable name after a rename.
+- The manual `cat > "$req" <<'EOF'` step also made it easy to leave `<dispatcher-pane-id>` or `<send-prompt-path>` unsubstituted, producing a self-sufficient-looking but undeliverable request.
+
+`send-review-request.sh` eliminates this class of error by never exposing the choice: it captures `CURRENT_PANE_ID` and `TARGET` internally, substitutes `CURRENT_PANE_ID` into every `{{DISPATCHER_PANE_ID}}` occurrence, resolves `{{SEND_PROMPT_PATH}}` to the absolute `send-prompt.sh` path, writes the request file, and sends to `TARGET` itself. The implementer calls one command with only the parts that may change (task, scope, skill, model, thinking, slug, round) and does not read or pick pane ids at all. `--dry-run` exposes the would-be target and fully rendered request for testing without touching a live reviewer, so the substitution is auditable without risking a mis-send.
+
 ## Dispatcher procedure
 
 1. Pick the review skill (default `deep-diff-review` unless the user says otherwise), the reviewer kind (default `pi`), and model plus thinking. If the user did not specify model or thinking, use the kind's defaults and say so in the request.
 
-2. Compute the slug and round number, then resolve the findings path per `Findings file`.
-
-3. Start or reuse the reviewer:
+2. Dispatch the review in one command. `send-review-request.sh` resolves the findings path, starts or reuses the reviewer, renders `templates/review-request.md` with the correct pane ids, writes the request file, and sends it:
 
 ```bash
-bash "<skill-dir>/scripts/start-reviewer.sh" --slug "$slug" --kind pi --model <model> --thinking <thinking>
+bash "<skill-dir>/scripts/send-review-request.sh" \
+  --slug "$slug" \
+  --task "<task description>" \
+  --scope "<what to review: branch, commit range, PR, or diff, plus a summary of the intended change>" \
+  --review-skill deep-diff-review \
+  --model <model> --thinking <thinking> \
+  --round "$round"
 ```
 
-Read `CURRENT_PANE_ID`, `TARGET`, `REVIEWER_PANE_ID`, `PANE_ID`, and `REUSED` from the output. Use `$CURRENT_PANE_ID` as `<dispatcher-pane-id>` in the request template, and use `$TARGET` as the reviewer prompt target for every send below. `PANE_ID` is retained only as a compatibility alias for `REVIEWER_PANE_ID`.
+Optional overrides: `--findings-path <absolute path>` (skip auto-resolution), `--repo <dir>`, `--kind pi`, `--dir <cwd>`, `--direction right|down`, `--timeout <ms>`, `--template <path>`. The script logs to stderr and prints `CURRENT_PANE_ID`, `TARGET`, `REVIEWER_PANE_ID`, `PANE_ID`, `REUSED`, `FINDINGS_PATH`, `REQUEST_FILE`, `STATUS`, and `STATE` on stdout. The implementer does not need to read `CURRENT_PANE_ID` or `TARGET` from the output to compose the message; the script already substituted them. `STATUS=CONFIRMED` (or `CONFIRMED_NUDGE` / `CONFIRMED_RESEND`) means the reviewer started processing. `STATUS=BLOCKED` or `STATUS=UNCONFIRMED` means tell the user; do not end the turn silently expecting a reply that will never come.
 
-4. Resolve the helper's absolute path, write the request with `<send-prompt-path>` and `<dispatcher-pane-id>` substituted, and send:
+Preview without sending:
 
 ```bash
-helper="<skill-dir>/scripts/send-prompt.sh"
-helper="$(cd "$(dirname "$helper")" && pwd -P)/$(basename "$helper")"
+bash "<skill-dir>/scripts/send-review-request.sh" --slug "$slug" --task "<task>" --scope "<scope>" --round "$round" --dry-run
 ```
 
-```bash
-req="$(dirname "$out")/$slug-r$round.request.txt"
-cat > "$req" <<'EOF'
-<request text from Contracts, with <send-prompt-path> set to the resolved helper path and <dispatcher-pane-id> set to $CURRENT_PANE_ID>
-EOF
+This prints the fully composed request (and the target it would use) to stderr and `STATUS=DRY_RUN` on stdout, without starting a non-existent reviewer beyond a reuse probe and without invoking `send-prompt.sh`. Use it to verify template rendering and target selection.
 
-bash "$helper" --target "$TARGET" --file "$req"
-```
+Manual fallback (not recommended): run `findings-path.sh`, then `start-reviewer.sh`, then render the template and call `send-prompt.sh` by hand, being careful to use `$CURRENT_PANE_ID` inside the message and `$TARGET` as the send destination. Prefer the orchestrator; the manual path is where the wrong-target failure occurs.
 
-Carrying the exact helper path spares the reviewer from locating the skill directory; the request must be self-sufficient.
+3. End your turn immediately. Tell the user the reviewer is running and that you will continue when the reply lands. Do not poll, sleep, or read the reviewer's pane.
 
-`STATUS=CONFIRMED` in any variant means the reviewer started processing. `STATUS=BLOCKED` or `STATUS=UNCONFIRMED` means tell the user; do not end the turn silently expecting a reply that will never come.
-
-5. End your turn immediately. Tell the user the reviewer is running and that you will continue when the reply lands. Do not poll, sleep, or read the reviewer's pane.
-
-6. When the reply arrives, read the findings file, whatever the verdict.
+4. When the reply arrives, read the findings file, whatever the verdict.
 
 - `APPROVED`: the loop is done. No suggestions are expected, but handle any suggestions in the file as non-blocking and report what you did with them.
 - `APPROVED_WITH_SUGGESTIONS`: the loop is done. Apply the suggestions that are clearly worth it, and list the rest for the user; do not start another review round for them.
-- `CHANGES_REQUESTED`: address the findings, bump the round, then repeat steps 2 to 5 with the same reviewer:
+- `CHANGES_REQUESTED`: address the findings, bump the round, then repeat step 2 with the same reviewer (same slug; the reviewer is reused):
 
 ```
 Round <N>: the fixes for the previous findings are in the working tree.
@@ -137,7 +141,9 @@ Re-review <scope>. Write findings to <new absolute path>. Same reply
 format as before.
 ```
 
-- `FAILED`: fix the stated reason (missing skill, wrong model), rerun `start-reviewer.sh` to get a healthy reviewer, and resend. If you cannot resolve it, report to the user.
+The next invocation of `send-review-request.sh` with an incremented `--round` reuses the same reviewer automatically.
+
+- `FAILED`: fix the stated reason (missing skill, wrong model), then rerun `send-review-request.sh` (it reruns `start-reviewer.sh` to get a healthy reviewer and resends). If you cannot resolve it, report to the user.
 
 ## Reviewer procedure
 
@@ -165,8 +171,8 @@ Confirm `STATUS=CONFIRMED` in some variant before ending your turn; otherwise re
 
 ## Rules
 
-- Sends always go through `send-prompt.sh`. A confirmed send means the target started processing; the sender then ends its turn immediately. Never hold the turn open waiting for the other side to finish; the callback is the wake-up, and holding the turn stalls its delivery.
-- One reviewer per task slug. Reuse it across rounds; `start-reviewer.sh` handles this.
+- Dispatcher sends go through `send-review-request.sh` (which calls `send-prompt.sh` internally); reviewer replies go through `send-prompt.sh` directly. A confirmed send means the target started processing; the sender then ends its turn immediately. Never hold the turn open waiting for the other side to finish; the callback is the wake-up, and holding the turn stalls its delivery.
+- One reviewer per task slug. Reuse it across rounds; `start-reviewer.sh` and `send-review-request.sh` handle this.
 - New findings file per round; never overwrite a previous round.
 - Do not close workspaces, tabs, or panes you did not create. The reviewer pane belongs to the loop; close it only when the user asks.
 - Script failure is a stop-and-report event, not an invitation to hand-roll Herdr commands.
