@@ -17,7 +17,8 @@
 # Exit codes: 0 success, 1 environment or herdr failure.
 # Encodes the platform rules: on Windows (MINGW/MSYS/CYGWIN) it never calls
 # `herdr agent start` for shim-installed kinds such as pi; it splits a pane,
-# runs the CLI as a plain command, waits for detection, then renames.
+# runs the explicit .cmd shim when available (especially pi.cmd), waits for
+# detection, then renames.
 
 set -euo pipefail
 
@@ -124,10 +125,16 @@ if [ "$WIN" -eq 0 ]; then
   log "'agent start' failed; falling back to pane run on a fresh pane"
 fi
 
-# 3. Pane-run path: required on Windows for .cmd-shim kinds (pi, npm installs),
+# 3. Pane-run path: required on Windows for .cmd-shim kinds (especially pi),
 #    and the universal fallback when 'agent start' fails anywhere else.
 pane="$(split_pane)"
-cmd="$KIND"
+pane_exec="$KIND"
+if [ "$WIN" -eq 1 ] && command -v "$KIND.cmd" >/dev/null 2>&1; then
+  # Herdr's Windows Pi integration recognizes the explicit pi.cmd executable,
+  # but not the shell-resolved `pi` spelling.
+  pane_exec="$KIND.cmd"
+fi
+cmd="$pane_exec"
 if [ ${#ARGS[@]} -gt 0 ]; then cmd="$cmd $(printf '%s ' "${ARGS[@]}")"; fi
 log "running in pane $pane: $cmd"
 herdr pane run "$pane" "$cmd" || die "pane run failed"
