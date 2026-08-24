@@ -90,15 +90,6 @@ REVIEW FAILED <short-reason>
 
 A needs-discussion style verdict from the review skill maps to `CHANGES_REQUESTED`, with the open questions inside the file.
 
-### Wrong-target failure mode eliminated by `send-review-request.sh`
-
-Before `send-review-request.sh`, the dispatcher procedure required the implementer (human or agent) to run `start-reviewer.sh`, read its `KEY=VALUE` output, and then manually substitute pane ids into the message and pick the send target. The concrete failure was selecting the wrong target from that output:
-
-- `start-reviewer.sh` prints both `CURRENT_PANE_ID` (the dispatcher's own pane, e.g. `wA5:p2`) and `TARGET`/`REVIEWER_PANE_ID` (the reviewer, e.g. `review-my-slug` or `wA5:p3`). The request template needs `CURRENT_PANE_ID` inside the message body (so the reviewer knows where to reply) and `TARGET` as the destination for `send-prompt.sh`. The implementer could, and did, invert these: embedding `TARGET` into the message as `<dispatcher-pane-id>` (so the reviewer replies to itself or to a stale name) or invoking `send-prompt.sh --target "$CURRENT_PANE_ID"` (sending the request to itself), or picking `REVIEWER_PANE_ID` when `TARGET` was the correct stable name after a rename.
-- The manual `cat > "$req" <<'EOF'` step also made it easy to leave `<dispatcher-pane-id>` or `<send-prompt-path>` unsubstituted, producing a self-sufficient-looking but undeliverable request.
-
-`send-review-request.sh` eliminates this class of error by never exposing the choice: it captures `CURRENT_PANE_ID` and `TARGET` internally, substitutes `CURRENT_PANE_ID` into every `{{DISPATCHER_PANE_ID}}` occurrence, resolves `{{SEND_PROMPT_PATH}}` to the absolute `send-prompt.sh` path, writes the request file, and sends to `TARGET` itself. The implementer calls one command with only the parts that may change (task, scope, skill, model, thinking, slug, round) and does not read or pick pane ids at all. `--dry-run` exposes the would-be target and fully rendered request for testing without touching a live reviewer, so the substitution is auditable without risking a mis-send.
-
 ## Dispatcher procedure
 
 1. Pick the review skill (default `deep-diff-review` unless the user says otherwise), the reviewer kind (default `pi`), and model plus thinking. If the user did not specify model or thinking, use the kind's defaults and say so in the request.
@@ -124,8 +115,6 @@ bash "<skill-dir>/scripts/send-review-request.sh" --slug "$slug" --task "<task>"
 ```
 
 This prints the fully composed request (and the target it would use) to stderr and `STATUS=DRY_RUN` on stdout, without starting a non-existent reviewer beyond a reuse probe and without invoking `send-prompt.sh`. Use it to verify template rendering and target selection.
-
-Manual fallback (not recommended): run `findings-path.sh`, then `start-reviewer.sh`, then render the template and call `send-prompt.sh` by hand, being careful to use `$CURRENT_PANE_ID` inside the message and `$TARGET` as the send destination. Prefer the orchestrator; the manual path is where the wrong-target failure occurs.
 
 3. End your turn immediately. Tell the user the reviewer is running and that you will continue when the reply lands. Do not poll, sleep, or read the reviewer's pane.
 
