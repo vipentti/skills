@@ -17,7 +17,7 @@
 #                          [--timeout MS] [--dry-run] [--template PATH]
 #
 # Output (stdout, KEY=VALUE):
-#   CURRENT_PANE_ID=wX:pY   dispatcher pane running this script
+#   IMPLEMENTER_PANE_ID=wX:pY   dispatcher pane running this script
 #   TARGET=name-or-pane-id  reviewer prompt target (correct target for send)
 #   REVIEWER_PANE_ID=wX:pY  pane hosting the reviewer
 #   PANE_ID=wX:pY           compatibility alias for REVIEWER_PANE_ID
@@ -79,8 +79,8 @@ case "$ROUND" in ''|*[!0-9]*) die "--round must be an integer" ;; esac
 case "$DIRECTION" in right|down) ;; *) die "--direction must be right or down" ;; esac
 case "$TIMEOUT_MS" in ''|*[!0-9]*) die "--timeout must be milliseconds" ;; esac
 [ "${HERDR_ENV:-}" = 1 ] || die "HERDR_ENV != 1; this agent is not running inside Herdr"
-CURRENT_PANE_ID="${HERDR_PANE_ID:-}"
-[ -n "$CURRENT_PANE_ID" ] || die "HERDR_PANE_ID is missing; cannot report the current pane"
+IMPLEMENTER_PANE_ID="${HERDR_PANE_ID:-}"
+[ -n "$IMPLEMENTER_PANE_ID" ] || die "HERDR_PANE_ID is missing; cannot report the implementer pane"
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd -P)"
 SKILL_DIR="$(cd "$SCRIPT_DIR/.." && pwd -P)"
@@ -203,7 +203,7 @@ if [ "$DRY_RUN" -eq 1 ]; then
       log "dry-run: no live reviewer '$NAME'; would create new one"
     fi
   fi
-  log "dry-run: dispatcher pane: $CURRENT_PANE_ID"
+  log "dry-run: dispatcher pane: $IMPLEMENTER_PANE_ID"
   log "dry-run: reviewer target: $TARGET (pane $REVIEWER_PANE_ID, reused=$REUSED)"
 else
   # Normal path: start or reuse reviewer via start-reviewer.sh (single invocation)
@@ -231,21 +231,21 @@ else
   TARGET="$(printf '%s\n' "$SR_STDOUT" | grep -E '^TARGET=' | tail -n1 | cut -d= -f2-)"
   REVIEWER_PANE_ID="$(printf '%s\n' "$SR_STDOUT" | grep -E '^REVIEWER_PANE_ID=' | tail -n1 | cut -d= -f2-)"
   PANE_ID_FALLBACK="$(printf '%s\n' "$SR_STDOUT" | grep -E '^PANE_ID=' | tail -n1 | cut -d= -f2-)"
-  CURRENT_FROM_SR="$(printf '%s\n' "$SR_STDOUT" | grep -E '^CURRENT_PANE_ID=' | tail -n1 | cut -d= -f2-)"
+  IMPLEMENTER_FROM_SR="$(printf '%s\n' "$SR_STDOUT" | grep -E '^IMPLEMENTER_PANE_ID=' | tail -n1 | cut -d= -f2-)"
   REUSED="$(printf '%s\n' "$SR_STDOUT" | grep -E '^REUSED=' | tail -n1 | cut -d= -f2-)"
 
   if [ -z "$REVIEWER_PANE_ID" ] && [ -n "$PANE_ID_FALLBACK" ]; then
     REVIEWER_PANE_ID="$PANE_ID_FALLBACK"
   fi
   PANE_ID="$REVIEWER_PANE_ID"
-  if [ -n "$CURRENT_FROM_SR" ]; then
-    CURRENT_PANE_ID="$CURRENT_FROM_SR"
+  if [ -n "$IMPLEMENTER_FROM_SR" ]; then
+    IMPLEMENTER_PANE_ID="$IMPLEMENTER_FROM_SR"
   fi
   [ -n "$TARGET" ] || die "failed to parse TARGET from start-reviewer output: $SR_STDOUT"
   [ -n "$REVIEWER_PANE_ID" ] || die "failed to parse REVIEWER_PANE_ID from start-reviewer output: $SR_STDOUT"
   [ -n "$REUSED" ] || REUSED="0"
 
-  log "dispatcher pane: $CURRENT_PANE_ID"
+  log "dispatcher pane: $IMPLEMENTER_PANE_ID"
   log "reviewer target: $TARGET (pane $REVIEWER_PANE_ID, reused=$REUSED)"
 
   PANE_ID="$REVIEWER_PANE_ID"
@@ -296,7 +296,8 @@ MSG="${MSG//\{\{SCOPE\}\}/$SCOPE}"
 MSG="${MSG//\{\{MODEL\}\}/$MODEL_DISPLAY}"
 MSG="${MSG//\{\{THINKING\}\}/$THINKING_DISPLAY}"
 MSG="${MSG//\{\{FINDINGS_PATH\}\}/$FINDINGS_PATH}"
-MSG="${MSG//\{\{DISPATCHER_PANE_ID\}\}/$CURRENT_PANE_ID}"
+MSG="${MSG//\{\{IMPLEMENTER_PANE_ID\}\}/$IMPLEMENTER_PANE_ID}"
+MSG="${MSG//\{\{DISPATCHER_PANE_ID\}\}/$IMPLEMENTER_PANE_ID}"
 MSG="${MSG//\{\{SEND_PROMPT_PATH\}\}/$SEND_PROMPT_ABS}"
 
 mkdir -p "$(dirname "$REQUEST_FILE")"
@@ -304,14 +305,14 @@ printf '%s\n' "$MSG" > "$REQUEST_FILE"
 log "wrote request to $REQUEST_FILE"
 
 if [ "$DRY_RUN" -eq 1 ]; then
-  log "DRY-RUN: would send to TARGET=$TARGET (reviewer pane $REVIEWER_PANE_ID) from dispatcher $CURRENT_PANE_ID"
+  log "DRY-RUN: would send to TARGET=$TARGET (reviewer pane $REVIEWER_PANE_ID) from dispatcher $IMPLEMENTER_PANE_ID"
   log "DRY-RUN: request file $REQUEST_FILE (not sent)"
-  printf 'CURRENT_PANE_ID=%s\nTARGET=%s\nREVIEWER_PANE_ID=%s\nPANE_ID=%s\nREUSED=%s\nFINDINGS_PATH=%s\nREQUEST_FILE=%s\nSTATUS=%s\nSTATE=%s\n' \
-    "$CURRENT_PANE_ID" "$TARGET" "$REVIEWER_PANE_ID" "$PANE_ID" "$REUSED" "$FINDINGS_PATH" "$REQUEST_FILE" "DRY_RUN" "dry-run"
+  printf 'IMPLEMENTER_PANE_ID=%s\nTARGET=%s\nREVIEWER_PANE_ID=%s\nPANE_ID=%s\nREUSED=%s\nFINDINGS_PATH=%s\nREQUEST_FILE=%s\nSTATUS=%s\nSTATE=%s\n' \
+    "$IMPLEMENTER_PANE_ID" "$TARGET" "$REVIEWER_PANE_ID" "$PANE_ID" "$REUSED" "$FINDINGS_PATH" "$REQUEST_FILE" "DRY_RUN" "dry-run"
   printf 'send-review-request: --- DRY-RUN REQUEST BEGIN (target %s) ---\n' "$TARGET" >&2
   cat "$REQUEST_FILE" >&2
   printf 'send-review-request: --- DRY-RUN REQUEST END ---\n' >&2
-  printf 'send-review-request: dry-run target selection: TARGET=%s CURRENT_PANE_ID=%s REVIEWER_PANE_ID=%s\n' "$TARGET" "$CURRENT_PANE_ID" "$REVIEWER_PANE_ID" >&2
+  printf 'send-review-request: dry-run target selection: TARGET=%s IMPLEMENTER_PANE_ID=%s REVIEWER_PANE_ID=%s\n' "$TARGET" "$IMPLEMENTER_PANE_ID" "$REVIEWER_PANE_ID" >&2
   exit 0
 fi
 
@@ -331,16 +332,16 @@ else
   SP_OUT="$(cat "$SP_TMP_OUT" 2>/dev/null || true)"
   SP_STATUS="$(printf '%s\n' "$SP_OUT" | grep -E '^STATUS=' | tail -n1 | cut -d= -f2-)"
   SP_STATE="$(printf '%s\n' "$SP_OUT" | grep -E '^STATE=' | tail -n1 | cut -d= -f2-)"
-  printf 'CURRENT_PANE_ID=%s\nTARGET=%s\nREVIEWER_PANE_ID=%s\nPANE_ID=%s\nREUSED=%s\nFINDINGS_PATH=%s\nREQUEST_FILE=%s\nSTATUS=%s\nSTATE=%s\n' \
-    "$CURRENT_PANE_ID" "$TARGET" "$REVIEWER_PANE_ID" "$PANE_ID" "$REUSED" "$FINDINGS_PATH" "$REQUEST_FILE" "${SP_STATUS:-UNCONFIRMED}" "${SP_STATE:-unknown}"
+  printf 'IMPLEMENTER_PANE_ID=%s\nTARGET=%s\nREVIEWER_PANE_ID=%s\nPANE_ID=%s\nREUSED=%s\nFINDINGS_PATH=%s\nREQUEST_FILE=%s\nSTATUS=%s\nSTATE=%s\n' \
+    "$IMPLEMENTER_PANE_ID" "$TARGET" "$REVIEWER_PANE_ID" "$PANE_ID" "$REUSED" "$FINDINGS_PATH" "$REQUEST_FILE" "${SP_STATUS:-UNCONFIRMED}" "${SP_STATE:-unknown}"
   if [ "$SP_STATUS" = "BLOCKED" ]; then
     exit 2
   fi
   die "send-prompt.sh failed (rc=$rc) STATUS=${SP_STATUS:-unknown} STATE=${SP_STATE:-unknown}"
 fi
 
-printf 'CURRENT_PANE_ID=%s\nTARGET=%s\nREVIEWER_PANE_ID=%s\nPANE_ID=%s\nREUSED=%s\nFINDINGS_PATH=%s\nREQUEST_FILE=%s\nSTATUS=%s\nSTATE=%s\n' \
-  "$CURRENT_PANE_ID" "$TARGET" "$REVIEWER_PANE_ID" "$PANE_ID" "$REUSED" "$FINDINGS_PATH" "$REQUEST_FILE" "${SP_STATUS:-CONFIRMED}" "${SP_STATE:-working}"
+printf 'IMPLEMENTER_PANE_ID=%s\nTARGET=%s\nREVIEWER_PANE_ID=%s\nPANE_ID=%s\nREUSED=%s\nFINDINGS_PATH=%s\nREQUEST_FILE=%s\nSTATUS=%s\nSTATE=%s\n' \
+  "$IMPLEMENTER_PANE_ID" "$TARGET" "$REVIEWER_PANE_ID" "$PANE_ID" "$REUSED" "$FINDINGS_PATH" "$REQUEST_FILE" "${SP_STATUS:-CONFIRMED}" "${SP_STATE:-working}"
 
 case "${SP_STATUS:-}" in
   CONFIRMED|CONFIRMED_NUDGE|CONFIRMED_RESEND) exit 0 ;;

@@ -13,7 +13,7 @@
 #   send-prompt.sh --target TARGET (--file PATH | "TEXT")
 #
 # Output (stdout, KEY=VALUE):
-#   CURRENT_PANE_ID=wX:pY   pane running this script
+#   IMPLEMENTER_PANE_ID=wX:pY pane running this script
 #   TARGET=name-or-pane-id  prompt destination
 #   STATUS=CONFIRMED | CONFIRMED_NUDGE | CONFIRMED_RESEND | BLOCKED | UNCONFIRMED
 #   STATE=<last observed agent_status>
@@ -58,8 +58,8 @@ fi
 
 [ "${HERDR_ENV:-}" = 1 ] || die "HERDR_ENV != 1; this agent is not running inside Herdr"
 command -v herdr >/dev/null 2>&1 || die "herdr not found on PATH"
-CURRENT_PANE_ID="${HERDR_PANE_ID:-}"
-[ -n "$CURRENT_PANE_ID" ] || die "HERDR_PANE_ID is missing; cannot report the current pane"
+IMPLEMENTER_PANE_ID="${HERDR_PANE_ID:-}"
+[ -n "$IMPLEMENTER_PANE_ID" ] || die "HERDR_PANE_ID is missing; cannot report the implementer pane"
 
 state_of() {
   printf '%s' "${1:-}" \
@@ -68,8 +68,8 @@ state_of() {
 }
 
 report() {
-  printf 'CURRENT_PANE_ID=%s\nTARGET=%s\nSTATUS=%s\nSTATE=%s\n' \
-    "$CURRENT_PANE_ID" "$TARGET" "$1" "$2"
+  printf 'IMPLEMENTER_PANE_ID=%s\nTARGET=%s\nSTATUS=%s\nSTATE=%s\n' \
+    "$IMPLEMENTER_PANE_ID" "$TARGET" "$1" "$2"
 }
 
 pre="$(herdr agent get "$TARGET" 2>/dev/null)" \
