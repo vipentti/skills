@@ -1,16 +1,18 @@
 #!/usr/bin/env bash
 # Orchestrated dispatcher-side request for herdr-review-loop.
-# Resolves findings path, starts or reuses reviewer, composes review-request
-# message from template, writes request file, and sends via send-prompt.sh.
+# Resolves slug (auto-derived if not supplied), findings path, starts or
+# reuses reviewer, composes review-request message from template, writes
+# request file, and sends via send-prompt.sh.
 #
-# Eliminates wrong-target failures by resolving CURRENT_PANE_ID (dispatcher)
-# and TARGET (reviewer) internally and substituting them itself instead of
-# requiring the implementer to choose from script output.
+# Slug is derived automatically from the repo directory name plus branch
+# or task per the skill contract when --slug is omitted, so the
+# implementer does not compute it. Findings path is also resolved
+# internally via findings-path.sh.
 #
 # Usage:
-#   send-review-request.sh --slug SLUG --task "task description" --scope "scope"
+#   send-review-request.sh --task "task description" --scope "scope"
 #                          [--review-skill SKILL] [--model MODEL] [--thinking THINK]
-#                          [--round N] [--findings-path PATH] [--repo DIR]
+#                          [--round N] [--slug SLUG] [--findings-path PATH] [--repo DIR]
 #                          [--kind pi] [--dir DIR] [--direction right|down]
 #                          [--timeout MS] [--dry-run] [--template PATH]
 #
@@ -35,9 +37,9 @@ die() { printf 'send-review-request: %s\n' "$*" >&2; exit 1; }
 log() { printf 'send-review-request: %s\n' "$*" >&2; }
 
 usage() {
-  printf 'usage: send-review-request.sh --slug SLUG --task "task" --scope "scope"\n' >&2
+  printf 'usage: send-review-request.sh --task "task" --scope "scope"\n' >&2
   printf '                              [--review-skill SKILL] [--model M] [--thinking T]\n' >&2
-  printf '                              [--round N] [--findings-path PATH] [--repo DIR]\n' >&2
+  printf '                              [--round N] [--slug SLUG] [--findings-path PATH] [--repo DIR]\n' >&2
   printf '                              [--kind pi] [--dir DIR] [--direction right|down]\n' >&2
   printf '                              [--timeout MS] [--dry-run] [--template PATH]\n' >&2
   exit 1
@@ -70,7 +72,6 @@ while [ $# -gt 0 ]; do
   esac
 done
 
-[ -n "$SLUG" ] || die "--slug is required"
 [ -n "$TASK" ] || die "--task is required (task description)"
 [ -n "$SCOPE" ] || die "--scope is required (what to review)"
 case "$ROUND" in ''|*[!0-9]*) die "--round must be an integer" ;; esac
@@ -92,6 +93,32 @@ FINDINGS_HELPER="$SCRIPT_DIR/findings-path.sh"
 [ -f "$FINDINGS_HELPER" ] || die "findings-path.sh not found: $FINDINGS_HELPER"
 
 SEND_PROMPT_ABS="$(cd "$(dirname "$SEND_PROMPT")" && pwd -P)/$(basename "$SEND_PROMPT")"
+
+# Auto-derive slug when not supplied, per skill contract:
+# repo directory name plus branch or task, lowercase, non-alphanumeric runs to '-', trim dashes, truncate 25.
+derive_slug() {
+  local repo_top repo_name branch raw slug
+  if [ -n "${REPO:-}" ] && [ -d "$REPO" ]; then
+    repo_top="$(git -C "$REPO" rev-parse --show-toplevel 2>/dev/null || printf '%s' "$REPO")"
+  else
+    repo_top="$(git rev-parse --show-toplevel 2>/dev/null || printf '%s' "$PWD")"
+  fi
+  repo_name="$(basename "$repo_top")"
+  branch="$(git -C "$repo_top" rev-parse --abbrev-ref HEAD 2>/dev/null || true)"
+  if [ -z "$branch" ] || [ "$branch" = "HEAD" ]; then
+    branch="$TASK"
+  fi
+  raw="${repo_name} ${branch}"
+  slug="$(printf '%s' "$raw" | tr '[:upper:]' '[:lower:]' | sed -E 's/[^a-z0-9]+/-/g; s/^-+//; s/-+$//')"
+  slug="$(printf '%s' "$slug" | cut -c1-25 | sed -E 's/-+$//')"
+  if [ -z "$slug" ]; then slug="task"; fi
+  printf '%s' "$slug"
+}
+
+if [ -z "$SLUG" ]; then
+  SLUG="$(derive_slug)"
+  log "derived slug: $SLUG (from repo/branch/task)"
+fi
 
 REPO_ARG=()
 if [ -n "$REPO" ]; then
