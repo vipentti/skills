@@ -19,4 +19,4 @@ Add `-g` to install globally, `--agent <name>` to skip the agent picker (`claude
 | [code-judo-review](skills/code-judo-review/SKILL.md) | strict code-quality review focused on maintainability, structural simplicity, and over-engineering; concrete problems, unnecessary complexity, missed reuse, speculative abstractions, high-value simplifications |
 | [simple-implementation](skills/simple-implementation/SKILL.md) | implement features, fixes, and refactors with the least machinery needed while preserving correctness |
 | [planlet-workflow](skills/planlet-workflow/SKILL.md) | execute Planlets task by task with verification, one commit per task, and a separate completion commit |
-| [herdr-review-loop](skills/herdr-review-loop/SKILL.md) | dispatch a second-agent reviewer over Herdr, exchange findings files, and loop until approval |
+| [herdr-review-loop](skills/experimental/herdr-review-loop/SKILL.md) | experimental: dispatch a second-agent reviewer over Herdr, exchange findings files, and loop until approval |
