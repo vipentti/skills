@@ -161,10 +161,10 @@ fi
 MODEL_DISPLAY="${MODEL:-default for $KIND}"
 THINKING_DISPLAY="${THINKING:-default for $KIND}"
 if [ -z "$MODEL" ]; then
-  log "model not specified; using kind default ($KIND) and noting in request"
+  log "model not specified; using kind default ($KIND)"
 fi
 if [ -z "$THINKING" ]; then
-  log "thinking not specified; using kind default and noting in request"
+  log "thinking not specified; using kind default"
 fi
 
 # Helper to parse pane_id from herdr JSON (same logic as start-reviewer.sh)
@@ -266,10 +266,6 @@ Load the "{{REVIEW_SKILL}}" skill and follow it exactly. If the skill is not
 installed, reply REVIEW FAILED skill-not-installed.
 
 Scope: {{SCOPE}}
-
-You must be running model "{{MODEL}}" with thinking "{{THINKING}}". If your
-current model or thinking level differs, reply REVIEW FAILED wrong-model
-instead of reviewing.
 
 Write your complete findings as Markdown to: {{FINDINGS_PATH}}.
 Always write the file, even when approving; non-blocking suggestions

@@ -36,7 +36,7 @@ One file per round, never overwritten. The path is resolved internally by `send-
 
 ### Messages
 
-The review-request message template lives in this skill at `templates/review-request.md` (with a built-in fallback in `send-review-request.sh`). The script renders it with the task, review skill, scope, model, thinking, findings path, dispatcher pane id, and helper path already substituted.
+The review-request message template lives in this skill at `templates/review-request.md` (with a built-in fallback in `send-review-request.sh`). The script renders it with the task, review skill, scope, findings path, dispatcher pane id, and helper path already substituted.
 
 Reviewer reply, always one line:
 
@@ -51,7 +51,7 @@ A needs-discussion style verdict from the review skill maps to `CHANGES_REQUESTE
 
 ## Dispatcher procedure
 
-1. Pick the review skill (default `deep-diff-review` unless the user says otherwise), the reviewer kind (default `pi`), and model plus thinking. If the user did not specify model or thinking, use the kind's defaults and say so in the request.
+1. Pick the review skill (default `deep-diff-review` unless the user says otherwise), the reviewer kind (default `pi`), and model plus thinking. If the user did not specify model or thinking, use the kind's defaults.
 
 2. Dispatch the review in one command. `send-review-request.sh` derives the slug, resolves the findings path, renders `templates/review-request.md` with the correct pane ids, writes the request file, and sends it:
 
@@ -90,23 +90,21 @@ format as before.
 
 The next invocation of `send-review-request.sh` with an incremented `--round` reuses the same reviewer automatically.
 
-- `FAILED`: fix the stated reason (missing skill, wrong model), then rerun `send-review-request.sh` (it reruns `start-reviewer.sh` to get a healthy reviewer and resends). If you cannot resolve it, report to the user.
+- `FAILED`: fix the stated reason (e.g. missing skill), then rerun `send-review-request.sh` (it reruns `start-reviewer.sh` to get a healthy reviewer and resends). If you cannot resolve it, report to the user.
 
 ## Reviewer procedure
 
 You receive the request as a prompt in your pane.
 
-1. Parse the request: review skill, scope, output path, dispatcher pane id, expected model and thinking, and the helper script path.
+1. Parse the request: review skill, scope, output path, dispatcher pane id, and the helper script path.
 
-2. Verify you are running the requested model and thinking. If not, reply `REVIEW FAILED wrong-model` and end your turn. Never review silently with a different setup.
+2. Load the named review skill and follow it. If it is not installed, reply `REVIEW FAILED skill-not-installed`. Do not substitute a different methodology silently.
 
-3. Load the named review skill and follow it. If it is not installed, reply `REVIEW FAILED skill-not-installed`. Do not substitute a different methodology silently.
+3. Perform the review per that skill: static inspection, findings scoped to the change, and no validation commands unless the skill allows them. Map the result to the transport verdict: use `APPROVED` with no suggestions, `APPROVED_WITH_SUGGESTIONS` when only non-blocking suggestions remain, `CHANGES_REQUESTED` when any fix is required, and `FAILED` when the review cannot be completed. Keep the named review skill's own verdict and output format in the findings file.
 
-4. Perform the review per that skill: static inspection, findings scoped to the change, and no validation commands unless the skill allows them. Map the result to the transport verdict: use `APPROVED` with no suggestions, `APPROVED_WITH_SUGGESTIONS` when only non-blocking suggestions remain, `CHANGES_REQUESTED` when any fix is required, and `FAILED` when the review cannot be completed. Keep the named review skill's own verdict and output format in the findings file.
+4. Write the full findings to the given path, creating parent directories as needed. Put the review skill's verdict on the first line, and keep its output format inside the file.
 
-5. Write the full findings to the given path, creating parent directories as needed. Put the review skill's verdict on the first line, and keep its output format inside the file.
-
-6. Send the reply, then end your turn at once. Use the exact helper path from the request; fall back to this skill's `scripts/send-prompt.sh` only if that path does not exist:
+5. Send the reply, then end your turn at once. Use the exact helper path from the request; fall back to this skill's `scripts/send-prompt.sh` only if that path does not exist:
 
 ```bash
 bash "<helper path from the request>" --target <dispatcher-pane-id> "REVIEW CHANGES_REQUESTED <path>"
@@ -114,7 +112,7 @@ bash "<helper path from the request>" --target <dispatcher-pane-id> "REVIEW CHAN
 
 Confirm `STATUS=CONFIRMED` in some variant before ending your turn; otherwise retry once or record the failure in the findings file and tell the user.
 
-7. Later rounds arrive as new prompts in this session. Keep context: verify earlier blockers are actually fixed, but focus each round on the delta.
+6. Later rounds arrive as new prompts in this session. Keep context: verify earlier blockers are actually fixed, but focus each round on the delta.
 
 ## Rules
 
