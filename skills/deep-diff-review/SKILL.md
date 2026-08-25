@@ -152,7 +152,8 @@ Do not apply fixes unless asked. Do not describe process or mention tool use in 
 
 Inside the code block, start with one verdict:
 
-**Approve**, **Request changes**, or **Needs discussion**
+**Review approved**, **Review approved with suggestions**,
+**Request changes**, or **Needs discussion**
 
 Then, in order:
 
