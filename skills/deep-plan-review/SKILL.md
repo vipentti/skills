@@ -143,9 +143,9 @@ Inside one fenced code block:
 3. `Requested revisions`
 
 ```text
-1. [SEVERITY] location - Problem.
-   Why: practical impact.
-   Fix: smallest complete correction.
+1. [SEVERITY] file:line - issue
+   Why: practical impact
+   Fix: smallest complete correction
 ```
 
 Use most useful available plan identifier. If no findings:
