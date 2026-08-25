@@ -162,7 +162,8 @@ Code judo removes accidental complexity only.
 
 Inside code block, start with one verdict:
 
-**Approve**, **Request changes**, or **Needs discussion**
+**Review approved**, **Review approved with suggestions**,
+**Request changes**, or **Needs discussion**
 
 Then, in order:
 
