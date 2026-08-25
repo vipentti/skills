@@ -9,8 +9,6 @@ license: MIT; derived from Cursor cursor-team-kit and DietrichGebert/ponytail
 
 # Deep Diff Review
 
-* Never use em dashes or en dashes. Use commas, colons, semicolons, or hyphens (-).
-
 ## Final Response Contract
 
 This section overrides all other instructions.
