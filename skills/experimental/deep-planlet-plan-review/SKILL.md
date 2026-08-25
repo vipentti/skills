@@ -8,20 +8,9 @@ license: MIT
 
 ## Rules
 
-Read-only review. Do not run commands, edit files, change task state, complete the planlet, modify repository state, or implement changes.
+Read-only review. Do not run commands, edit files, change task state, complete the planlet, modify repository state, or implement changes. Planlet structure is already validated; inspect code only to judge the plan.
 
-Planlet structure is already validated. Inspect code only to judge the plan.
-
-## Final Response Contract
-
-Review internally. Do not expose reasoning, scratchpad, process notes, or tool use.
-
-Return only:
-
-1. One fenced code block using `Output`.
-2. Exact text `Review ready` immediately after it.
-
-Nothing else.
+Review internally. Do not expose reasoning, scratchpad, process notes, or tool use. Return only one fenced code block in the `Output` format, followed by the exact text `Review ready`. Nothing else.
 
 ## Objective
 
@@ -31,33 +20,20 @@ Primary test:
 
 > Can a fresh implementation agent complete the work correctly from the repository and planlet without making a material design decision or guessing intended behavior?
 
-A plan is underspecified when two reasonable implementations can satisfy it while producing materially different behavior, ownership, failure semantics, compatibility, state, or verification.
+A plan is underspecified when two reasonable implementations can satisfy it while producing materially different behavior, ownership, failure semantics, compatibility, state, or verification. Simulate at least two such implementations; when they diverge materially, report the missing decision unless repository reality settles it.
 
-Review all applicable dimensions even after `NEEDS REVISION` is clear. Do not demand detail already settled by repository reality or authoritative contracts.
+Review all applicable dimensions even after `NEEDS REVISION` is clear. Never demand detail already settled by repository reality or authoritative contracts; treat restated detail as possible accidental complexity instead.
 
-## Inputs
+## Inputs and Discipline
 
-Inspect as available:
+Inspect as available: `plan.md`, `tasks.md`, repository instructions and planning guidance, relevant architecture, code, APIs, tests, config, workflows, authoritative dependency, service, or protocol contracts, and the commit SHA.
 
-- `plan.md`, `tasks.md`, repository instructions, and planning guidance
-- relevant architecture, code, APIs, tests, config, and workflows
-- authoritative dependency, service, or protocol contracts
-- commit SHA
-
-Treat both files as one implementation handoff.
+Treat both files as one implementation handoff:
 
 - `plan.md` owns outcome, scope, exclusions, design decisions, invariants, acceptance, verification, and risks.
-- `tasks.md` owns ordered, independently meaningful outcomes.
+- `tasks.md` owns ordered, independently meaningful outcomes. Tasks may repeat small constraints for clarity, but must not become a second detailed specification.
 
-Tasks may repeat small constraints for clarity, but must not become a second detailed specification.
-
-## Review Discipline
-
-Review independently. Group findings by root cause.
-
-If one issue affects several sections or tasks, report one finding covering all affected locations. Include contradictions exposed by the smallest complete fix.
-
-Normally report 8 or fewer grouped findings, but never omit a material issue to meet the limit.
+Group findings by root cause: one finding per issue, covering every affected section or task and every contradiction exposed by the smallest complete fix. Normally report 8 or fewer grouped findings, but never omit a material issue to meet the limit.
 
 ## Review Checks
 
@@ -75,55 +51,33 @@ Check consequential behavior: errors, state transitions, precedence, lifecycle, 
 
 Ensure responsibilities live in the correct layer and reuse existing seams. Flag duplicate authorities, wrong-layer policy, unnecessary coupling or state, temporary architecture, speculative abstractions, and premature future-proofing.
 
-Flag only unresolved decisions that materially affect implementation. Do not require edge cases already settled by repository behavior.
-
-Split only genuinely independent outcomes whose combination increases implementation or review risk.
+Flag only unresolved decisions that materially affect implementation, not edge cases already settled by repository behavior. Split only genuinely independent outcomes whose combination increases implementation or review risk.
 
 ### 3. Acceptance and proof
 
-Acceptance criteria must be observable, objective, complete for key behavior, scope-consistent, and able to reject materially wrong implementations.
-
-Ask:
+Acceptance criteria must be observable, objective, complete for key behavior, scope-consistent, and able to reject materially wrong implementations. Ask:
 
 > Could a plausible incorrect implementation satisfy every acceptance criterion?
+>
+> For each material claim: what observation distinguishes correct behavior from a plausible incorrect implementation?
 
-For each material claim ask:
-
-> What observation distinguishes correct behavior from a plausible incorrect implementation?
-
-Verification must observe the invariant at the correct boundary, fail when behavior is wrong, cover material failure paths, handle skips or unavailable dependencies, match platform and CI reality, and avoid brittle or redundant proof.
-
-Do not confuse configuration with runtime behavior. Prefer the cheapest sufficient proof at the owning boundary.
+Verification must observe the invariant at the correct boundary, fail when behavior is wrong, cover material failure paths, handle skips or unavailable dependencies, match platform and CI reality, and avoid brittle or redundant proof. Do not confuse configuration with runtime behavior. Prefer the cheapest sufficient proof at the owning boundary.
 
 ### 4. Plan-task coverage
 
 Ensure every required outcome has task ownership, every task contributes, prerequisites precede consumers, and no task depends on excluded work.
 
-Flag catch-all tasks, unrelated bundles, vague completion conditions, unsafe ordering, or detailed duplication of `plan.md`.
-
-Compress before splitting. Split only when each resulting task is a meaningful delivered outcome.
+Flag catch-all tasks, unrelated bundles, vague completion conditions, unsafe ordering, or detailed duplication of `plan.md`. Compress before splitting; split only when each resulting task is a meaningful delivered outcome.
 
 ### 5. External state and contracts
 
 For external or destructive state, require clarity on target, preconditions, ordering, preservation of unrelated state, mutation semantics, repeat behavior, and post-change verification.
 
-For pinned CLIs, SDKs, protocols, services, or dependencies, verify the plan matches that version's contract, including consequential flags, defaults, environment semantics, and provider or network assumptions.
-
-Preserve needed contract facts, not copied documentation.
+For pinned CLIs, SDKs, protocols, services, or dependencies, verify the plan matches that version's contract, including consequential flags, defaults, environment semantics, and provider or network assumptions. Preserve needed contract facts, not copied documentation.
 
 ### 6. Conciseness
 
-Both files must be concise and implementation-focused.
-
-Flag unnecessary verbosity, repetition, excessive rationale, or detail that does not help implementation. Prefer the shortest wording that still lets a fresh agent implement without guessing.
-
-Do not remove information needed for correctness, constraints, validation, acceptance, or consequential decisions. Flag sections or tasks that can be substantially shortened without losing actionable information.
-
-## Fresh-Agent Simulation
-
-Simulate at least two reasonable implementations. If both satisfy the plan but differ materially in behavior, ownership, state, failure precedence, compatibility, persistence, cleanup, security, or external mutation, report the missing decision unless repository reality settles it.
-
-Challenge detail already determined by repository reality as possible accidental complexity, not automatically a finding.
+Both files must be concise and implementation-focused. Flag verbosity, repetition, excessive rationale, or any section or task that can be substantially shortened without losing information needed for correctness, constraints, validation, acceptance, or consequential decisions.
 
 ## Plan Judo
 
@@ -153,7 +107,7 @@ Each finding must state the issue, practical impact, and smallest complete fix.
 
 ## Verdict
 
-- **READY**: no BLOCKER or IMPORTANT findings remain.
+- **READY**: no BLOCKER or IMPORTANT findings remain, meaning implementation can begin without material guessing.
 - **NEEDS REVISION**: at least one BLOCKER or IMPORTANT finding exists.
 
 ## Output
@@ -178,4 +132,4 @@ If none:
 
 ## Final Check
 
-Ensure all applicable checks completed, review did not stop after the first finding, fresh-agent simulation and proof challenge were performed, findings are grouped by root cause, no finding asks for repository-obvious detail or unnecessary scope, READY means implementation can begin without material guessing, and output is one review code block followed only by `Review ready`. No commands executed.
+Confirm all applicable checks completed, review continued past the first finding, fresh-agent simulation and proof challenge were performed, findings are grouped by root cause, no finding asks for repository-obvious detail or unnecessary scope, and output is one review code block followed only by `Review ready`. No commands executed.
