@@ -9,8 +9,6 @@ license: MIT; derived from Cursor cursor-team-kit and DietrichGebert/ponytail
 
 # Code Judo Review
 
-* Never use em dashes or en dashes. Use commas, colons, semicolons, or hyphens (-).
-
 ## Final Response Contract
 
 This section overrides all other instructions.
@@ -103,7 +101,8 @@ Inside the code block:
 
 Start with one verdict:
 
-**Approve**, **Request changes**, or **Needs discussion**
+**Review approved**, **Review approved with suggestions**,
+**Request changes**, or **Needs discussion**
 
 Then in order:
 
