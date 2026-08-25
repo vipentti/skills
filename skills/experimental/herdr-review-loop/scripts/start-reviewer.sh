@@ -3,7 +3,7 @@
 # Idempotent: safe to run again at any time; prints the live reviewer when one exists.
 #
 # Usage:
-#   start-reviewer.sh --slug SLUG [--kind pi] [--model M] [--thinking T]
+#   start-reviewer.sh --slug SLUG [--kind pi|codex|claude|cursor] [--model M] [--thinking T]
 #                     [--name NAME] [--dir DIR] [--direction right|down]
 #                     [--timeout MS] [-- EXECUTABLE_ARGS...]
 #
@@ -15,10 +15,11 @@
 #   REUSED=0|1              1 when an existing live reviewer was reused
 #
 # Exit codes: 0 success, 1 environment or herdr failure.
-# Encodes the platform rules: on Windows (MINGW/MSYS/CYGWIN) it never calls
-# `herdr agent start` for shim-installed kinds such as pi; it splits a pane,
-# runs the explicit .cmd shim when available (especially pi.cmd), waits for
-# detection, then renames.
+# Encodes the platform rules: on Windows (MINGW/MSYS/CYGWIN) it skips
+# `herdr agent start` for kinds installed as .cmd shims (pi, cursor), splits
+# a pane, runs the explicit .cmd shim (pi.cmd, cursor-agent.cmd), waits for
+# detection, then renames. Real-binary kinds (codex, claude) try `agent
+# start` on any platform, with the pane-run fallback.
 
 set -euo pipefail
 
@@ -26,7 +27,7 @@ die() { printf 'start-reviewer: %s\n' "$*" >&2; exit 1; }
 log() { printf 'start-reviewer: %s\n' "$*" >&2; }
 
 usage() {
-  printf 'usage: start-reviewer.sh --slug SLUG [--kind pi] [--model M] [--thinking T]\n' >&2
+  printf 'usage: start-reviewer.sh --slug SLUG [--kind pi|codex|claude|cursor] [--model M] [--thinking T]\n' >&2
   printf '                   [--name NAME] [--dir DIR] [--direction right|down]\n' >&2
   printf '                   [--timeout MS] [-- EXECUTABLE_ARGS...]\n' >&2
   exit 1
@@ -95,10 +96,37 @@ split_pane() {
 }
 
 # Assemble native CLI arguments from model/thinking plus any passthrough args.
+# The thinking knob has different flag names per kind; unknown kinds keep the
+# historical pi-style passthrough.
 ARGS=()
-[ -n "$MODEL" ] && ARGS+=("--model" "$MODEL")
-[ -n "$THINKING" ] && ARGS+=("--thinking" "$THINKING")
+case "$KIND" in
+  claude)
+    [ -n "$MODEL" ] && ARGS+=("--model" "$MODEL")
+    [ -n "$THINKING" ] && ARGS+=("--effort" "$THINKING")
+    ;;
+  codex)
+    [ -n "$MODEL" ] && ARGS+=("--model" "$MODEL")
+    [ -n "$THINKING" ] && ARGS+=("-c" "model_reasoning_effort=$THINKING")
+    ;;
+  cursor)
+    [ -n "$MODEL" ] && ARGS+=("--model" "$MODEL")
+    if [ -n "$THINKING" ]; then
+      log "thinking: cursor has no standalone thinking flag; reasoning is model-encoded (e.g. --model 'claude-opus-4-8[effort=high]'); --thinking ignored"
+    fi
+    ;;
+  *)
+    [ -n "$MODEL" ] && ARGS+=("--model" "$MODEL")
+    [ -n "$THINKING" ] && ARGS+=("--thinking" "$THINKING")
+    ;;
+esac
 if [ ${#AGENT_ARGS[@]} -gt 0 ]; then ARGS+=("${AGENT_ARGS[@]}"); fi
+
+# Canonical executable for the kind. The pane-run path and the Windows .cmd
+# shim detection use this; cursor's CLI binary is `cursor-agent`.
+agent_exec="$KIND"
+case "$KIND" in
+  cursor) agent_exec="cursor-agent" ;;
+esac
 
 # 1. Reuse a live reviewer with the same name, regardless of how it was started.
 if out="$(herdr agent get "$NAME" 2>/dev/null)"; then
@@ -109,11 +137,19 @@ if out="$(herdr agent get "$NAME" 2>/dev/null)"; then
   exit 0
 fi
 
-# 2. Non-Windows: let herdr launch and detect the agent.
+# 2. Prefer `herdr agent start` when the kind launches from a real binary.
+#    On Windows, kinds installed as .cmd shims (e.g. pi, cursor) cannot be
+#    launched that way; they go straight to the pane-run path below.
 WIN=0
 case "$(uname -s 2>/dev/null)" in *MINGW*|*MSYS*|*CYGWIN*) WIN=1 ;; esac
 
-if [ "$WIN" -eq 0 ]; then
+SHIM_ONLY=0
+if [ "$WIN" -eq 1 ] && command -v "$agent_exec.cmd" >/dev/null 2>&1; then
+  SHIM_ONLY=1
+  log "kind '$KIND' is a Windows .cmd shim ($agent_exec.cmd); using the pane-run path"
+fi
+
+if [ "$SHIM_ONLY" -eq 0 ]; then
   pane="$(split_pane)"
   # shellcheck disable=SC2086
   if herdr agent start "$NAME" --kind "$KIND" --pane "$pane" --timeout "$TIMEOUT_MS" \
@@ -125,14 +161,14 @@ if [ "$WIN" -eq 0 ]; then
   log "'agent start' failed; falling back to pane run on a fresh pane"
 fi
 
-# 3. Pane-run path: required on Windows for .cmd-shim kinds (especially pi),
+# 3. Pane-run path: required on Windows for .cmd-shim kinds (pi, cursor),
 #    and the universal fallback when 'agent start' fails anywhere else.
 pane="$(split_pane)"
-pane_exec="$KIND"
-if [ "$WIN" -eq 1 ] && command -v "$KIND.cmd" >/dev/null 2>&1; then
-  # Herdr's Windows Pi integration recognizes the explicit pi.cmd executable,
-  # but not the shell-resolved `pi` spelling.
-  pane_exec="$KIND.cmd"
+pane_exec="$agent_exec"
+if [ "$WIN" -eq 1 ] && command -v "$agent_exec.cmd" >/dev/null 2>&1; then
+  # Herdr's Windows integration recognizes the explicit .cmd shim (e.g.
+  # pi.cmd, cursor-agent.cmd), not the shell-resolved bare spelling.
+  pane_exec="$agent_exec.cmd"
 fi
 cmd="$pane_exec"
 if [ ${#ARGS[@]} -gt 0 ]; then cmd="$cmd $(printf '%s ' "${ARGS[@]}")"; fi

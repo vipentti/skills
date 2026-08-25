@@ -13,7 +13,7 @@
 #   send-review-request.sh --task "task description" --scope "scope"
 #                          [--review-skill SKILL] [--model MODEL] [--thinking THINK]
 #                          [--round N] [--slug SLUG] [--findings-path PATH] [--repo DIR]
-#                          [--kind pi] [--dir DIR] [--direction right|down]
+#                          [--kind pi|codex|claude|cursor] [--dir DIR] [--direction right|down]
 #                          [--timeout MS] [--dry-run] [--template PATH]
 #
 # Output (stdout, KEY=VALUE):
@@ -40,7 +40,7 @@ usage() {
   printf 'usage: send-review-request.sh --task "task" --scope "scope"\n' >&2
   printf '                              [--review-skill SKILL] [--model M] [--thinking T]\n' >&2
   printf '                              [--round N] [--slug SLUG] [--findings-path PATH] [--repo DIR]\n' >&2
-  printf '                              [--kind pi] [--dir DIR] [--direction right|down]\n' >&2
+  printf '                              [--kind pi|codex|claude|cursor] [--dir DIR] [--direction right|down]\n' >&2
   printf '                              [--timeout MS] [--dry-run] [--template PATH]\n' >&2
   exit 1
 }
