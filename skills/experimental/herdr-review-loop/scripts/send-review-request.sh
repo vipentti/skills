@@ -13,7 +13,7 @@
 #   send-review-request.sh --task "task description" --scope "scope"
 #                          [--review-skill SKILL] [--model MODEL] [--thinking THINK]
 #                          [--round N] [--slug SLUG] [--findings-path PATH] [--repo DIR]
-#                          [--kind pi] [--dir DIR] [--direction right|down]
+#                          [--kind pi|codex|claude|cursor] [--dir DIR] [--direction right|down]
 #                          [--timeout MS] [--dry-run] [--template PATH]
 #
 # Output (stdout, KEY=VALUE):
@@ -40,7 +40,7 @@ usage() {
   printf 'usage: send-review-request.sh --task "task" --scope "scope"\n' >&2
   printf '                              [--review-skill SKILL] [--model M] [--thinking T]\n' >&2
   printf '                              [--round N] [--slug SLUG] [--findings-path PATH] [--repo DIR]\n' >&2
-  printf '                              [--kind pi] [--dir DIR] [--direction right|down]\n' >&2
+  printf '                              [--kind pi|codex|claude|cursor] [--dir DIR] [--direction right|down]\n' >&2
   printf '                              [--timeout MS] [--dry-run] [--template PATH]\n' >&2
   exit 1
 }
@@ -161,10 +161,10 @@ fi
 MODEL_DISPLAY="${MODEL:-default for $KIND}"
 THINKING_DISPLAY="${THINKING:-default for $KIND}"
 if [ -z "$MODEL" ]; then
-  log "model not specified; using kind default ($KIND) and noting in request"
+  log "model not specified; using kind default ($KIND)"
 fi
 if [ -z "$THINKING" ]; then
-  log "thinking not specified; using kind default and noting in request"
+  log "thinking not specified; using kind default"
 fi
 
 # Helper to parse pane_id from herdr JSON (same logic as start-reviewer.sh)
@@ -266,10 +266,6 @@ Load the "{{REVIEW_SKILL}}" skill and follow it exactly. If the skill is not
 installed, reply REVIEW FAILED skill-not-installed.
 
 Scope: {{SCOPE}}
-
-You must be running model "{{MODEL}}" with thinking "{{THINKING}}". If your
-current model or thinking level differs, reply REVIEW FAILED wrong-model
-instead of reviewing.
 
 Write your complete findings as Markdown to: {{FINDINGS_PATH}}.
 Always write the file, even when approving; non-blocking suggestions

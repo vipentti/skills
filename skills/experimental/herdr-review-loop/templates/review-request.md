@@ -5,10 +5,6 @@ installed, reply REVIEW FAILED skill-not-installed.
 
 Scope: {{SCOPE}}
 
-You must be running model "{{MODEL}}" with thinking "{{THINKING}}". If your
-current model or thinking level differs, reply REVIEW FAILED wrong-model
-instead of reviewing.
-
 Write your complete findings as Markdown to: {{FINDINGS_PATH}}.
 Always write the file, even when approving; non-blocking suggestions
 belong there too.
