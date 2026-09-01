@@ -2,8 +2,8 @@
 name: deep-diff-review
 description: Perform deep static review of supplied diff, commit range, branch, or pull request. Find all material issues introduced by or materially affected by change, focusing on correctness, contracts, state, reuse, complexity, security, maintainability, and high-value simplification. Inspect surrounding code only as evidence, keep findings scoped to change, and do not run validation commands.
 source:
-- https://github.com/cursor/plugins/tree/main/cursor-team-kit/skills/thermo-nuclear-code-quality-review
-- https://github.com/DietrichGebert/ponytail
+  - https://github.com/cursor/plugins/tree/main/cursor-team-kit/skills/thermo-nuclear-code-quality-review
+  - https://github.com/DietrichGebert/ponytail
 license: MIT; derived from Cursor cursor-team-kit and DietrichGebert/ponytail
 ---
 

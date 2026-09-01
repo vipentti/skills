@@ -2,8 +2,8 @@
 name: deep-code-judo-review
 description: Perform unusually strict, exhaustive code-quality review of a diff, commit range, branch, or pull request. Focus on code-judo simplification, removing accidental complexity, state, branching, abstractions, duplication, and weak ownership while preserving required behavior. Use for code judo, deep code-quality audit, thermonuclear-style review, or especially rigorous maintainability review.
 source:
-- https://github.com/cursor/plugins/tree/main/cursor-team-kit/skills/thermo-nuclear-code-quality-review
-- https://github.com/DietrichGebert/ponytail
+  - https://github.com/cursor/plugins/tree/main/cursor-team-kit/skills/thermo-nuclear-code-quality-review
+  - https://github.com/DietrichGebert/ponytail
 license: MIT; derived from Cursor cursor-team-kit and DietrichGebert/ponytail
 ---
 
