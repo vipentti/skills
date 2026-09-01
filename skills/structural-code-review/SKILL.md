@@ -73,6 +73,18 @@ Do not recommend refactoring merely to reduce line count. Every proposed change 
 * coupling
 * future changeability
 
+## Severity
+
+Use:
+
+* `Blocker`: prevents safe merge because behavior is materially unsafe, destructive, unusable, or cannot satisfy required contract.
+* `Major`: material correctness, security, compatibility, state, contract, structural, ownership, or maintainability issue that should be fixed before merge.
+* `Suggestion`: meaningful non-blocking improvement.
+
+Substantial accidental complexity may be `Major` even when behavior works if it materially worsens maintainability, ownership, state complexity, or future change cost.
+
+Do not report style-only or speculative suggestions.
+
 ## Output
 
 Start with exactly one verdict:
@@ -84,12 +96,25 @@ Start with exactly one verdict:
 
 Report only actionable structural findings.
 
-For each finding include:
+When both required changes and open questions exist, use **Request changes**.
 
-1. **Location** - file or module and relevant symbol or responsibility.
-2. **Problem** - specific structural issue.
-3. **Impact** - how it makes maintenance or future changes harder.
-4. **Recommended change** - concrete extraction, relocation, boundary, or reorganization.
+Prefer this standard output format:
+
+```text
+Verdict: <Review approved | Review approved with suggestions | Request changes | Needs discussion | Review incomplete>
+Reviewed: <change identifier>
+Findings
+
+1. [SEVERITY] <location> - issue
+   Why: practical impact
+   Fix: smallest complete correction
+```
+
+Additional findings, questions, or caller-required output may follow.
+
+Use most useful identifier for `Reviewed`. Use `file:line` when available, otherwise most stable location.
+
+Caller-provided transport or output contracts take precedence over this presentation format.
 
 If no actionable findings exist, say so rather than inventing refactoring work.
 
