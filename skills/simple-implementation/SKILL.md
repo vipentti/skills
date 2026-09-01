@@ -2,7 +2,7 @@
 name: simple-implementation
 description: Use when implementing features, fixing bugs, refactoring, or making other code changes. Prefer the simplest correct implementation. Reuse existing code and native capabilities, avoid speculative abstractions and dependencies, and add only machinery required by current requirements.
 license: MIT
-------------
+---
 
 # Implementation Simplicity
 
