@@ -145,15 +145,35 @@ Do not report style-only or speculative suggestions.
 
 ## Verdict
 
-Use exactly one:
+Use exactly one verdict:
 
 * **Review approved**: no findings remain.
 * **Review approved with suggestions**: only `Suggestion` findings remain.
 * **Request changes**: at least one `Blocker` or `Major` finding exists.
-* **Needs discussion**: review is complete, but genuine unresolved requirement or design decision prevents determining correct behavior.
+* **Needs discussion**: review is complete, but a genuine unresolved requirement or design decision prevents determining correct behavior.
 * **Review incomplete**: required change data or evidence could not be inspected, so review cannot be completed safely.
 
-When both required changes and open questions exist, use **Request changes** and include open questions.
+When both required changes and open questions exist, use **Request changes**.
+
+Prefer this standard summary block when presenting the review:
+
+```text
+Verdict: <Review approved | Review approved with suggestions | Request changes | Needs discussion | Review incomplete>
+Reviewed: <change identifier>
+Findings
+
+1. [SEVERITY] <location> - issue
+   Why: practical impact
+   Fix: smallest complete correction
+```
+
+`Reviewed` should use the most useful available identifier, such as PR number and commit SHA, branch and SHA, commit range, or supplied diff description.
+
+`Findings` counts reported review findings. Additional findings, questions, explanations, or caller-required output may follow in any format appropriate to the context.
+
+`<location>` should be `file:line` when available. Otherwise use most stable available source location, such as file section, task identifier, heading, or supplied-plan reference.
+
+Do not let this presentation format override a caller-provided transport or output contract.
 
 ## Final Check
 
