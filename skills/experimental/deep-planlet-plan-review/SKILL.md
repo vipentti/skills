@@ -112,9 +112,7 @@ Each finding must state the issue, practical impact, and smallest complete fix.
 
 ## Output
 
-Return exactly one fenced code block followed immediately by exact text `Review ready`. Nothing else before or after.
-
-Inside the code block use:
+Prefer this standard summary block when presenting the review:
 
 ```text
 Verdict: READY | NEEDS REVISION
