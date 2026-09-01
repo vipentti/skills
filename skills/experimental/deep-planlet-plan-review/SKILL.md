@@ -10,7 +10,7 @@ license: MIT
 
 Read-only review. Do not run commands, edit files, change task state, complete the planlet, modify repository state, or implement changes. Planlet structure is already validated; inspect code only to judge the plan.
 
-Review internally. Do not expose reasoning, scratchpad, process notes, or tool use. Return only one fenced code block in the `Output` format, followed by the exact text `Review ready`. Nothing else.
+Review internally. Do not expose reasoning, scratchpad, process notes, or tool use.
 
 ## Objective
 
@@ -26,12 +26,12 @@ Review all applicable dimensions even after `NEEDS REVISION` is clear. Never dem
 
 ## Inputs and Discipline
 
-Inspect as available: `plan.md`, `tasks.md`, repository instructions and planning guidance, relevant architecture, code, APIs, tests, config, workflows, authoritative dependency, service, or protocol contracts, and the commit SHA.
+Inspect as available: in-scope `plan.md` and `tasks.md`, repository instructions and planning guidance, relevant architecture, code, APIs, tests, config, workflows, authoritative dependency, service, or protocol contracts, and the commit SHA.
 
-Treat both files as one implementation handoff:
+Treat the in-scope `plan.md` and `tasks.md` supplied or referenced for this review as one implementation handoff:
 
-- `plan.md` owns outcome, scope, exclusions, design decisions, invariants, acceptance, verification, and risks.
-- `tasks.md` owns ordered, independently meaningful outcomes. Tasks may repeat small constraints for clarity, but must not become a second detailed specification.
+* `plan.md` owns outcome, scope, exclusions, design decisions, invariants, acceptance, verification, and risks.
+* `tasks.md` owns ordered, independently meaningful outcomes. Tasks may repeat small constraints for clarity, but must not become a second detailed specification.
 
 Group findings by root cause: one finding per issue, covering every affected section or task and every contradiction exposed by the smallest complete fix. Normally report 8 or fewer grouped findings, but never omit a material issue to meet the limit.
 
@@ -49,7 +49,7 @@ Ensure one coherent outcome with clear boundaries. Flag missing prerequisites, u
 
 Check consequential behavior: errors, state transitions, precedence, lifecycle, cleanup, persistence, compatibility, defaults, side effects, and trust boundaries.
 
-Ensure responsibilities live in the correct layer and reuse existing seams. Flag duplicate authorities, wrong-layer policy, unnecessary coupling or state, temporary architecture, speculative abstractions, and premature future-proofing.
+Ensure responsibilities live in correct layer and reuse existing seams. Flag duplicate authorities, wrong-layer policy, unnecessary coupling or state, temporary architecture, speculative abstractions, and premature future-proofing.
 
 Flag only unresolved decisions that materially affect implementation, not edge cases already settled by repository behavior. Split only genuinely independent outcomes whose combination increases implementation or review risk.
 
@@ -98,8 +98,8 @@ Keep complexity required by correctness or explicit requirements.
 
 Use only:
 
-- **BLOCKER**: implementation cannot reliably proceed, or the plan permits materially unsafe, destructive, contradictory, or undefined behavior.
-- **IMPORTANT**: likely to cause incorrect or incomplete implementation, invalid verification, avoidable rework, material over-engineering, or another review round.
+* **BLOCKER**: implementation cannot reliably proceed, or the plan permits materially unsafe, destructive, contradictory, or undefined behavior.
+* **IMPORTANT**: likely to cause incorrect or incomplete implementation, invalid verification, avoidable rework, material over-engineering, or another review round.
 
 Do not report suggestions, style preferences, optional polish, speculative future-proofing, unrelated cleanup, or redesign just because another design is possible.
 
@@ -107,29 +107,39 @@ Each finding must state the issue, practical impact, and smallest complete fix.
 
 ## Verdict
 
-- **READY**: no BLOCKER or IMPORTANT findings remain, meaning implementation can begin without material guessing.
-- **NEEDS REVISION**: at least one BLOCKER or IMPORTANT finding exists.
+* **READY**: no BLOCKER or IMPORTANT findings remain, meaning implementation can begin without material guessing.
+* **NEEDS REVISION**: at least one BLOCKER or IMPORTANT finding exists.
 
 ## Output
 
-Inside one fenced code block:
+Return exactly one fenced code block followed immediately by exact text `Review ready`. Nothing else before or after.
 
-1. Verdict: **READY** or **NEEDS REVISION**
-2. `Reviewed: <slug> @ <commit-sha>`, use `unknown` if unavailable
-3. `Requested revisions`
-
-Findings:
+Inside the code block use:
 
 ```text
-1. [SEVERITY] file:line - issue.
-   Why: impact
+Verdict: READY | NEEDS REVISION
+Reviewed: <plan-identifier> @ <commit-sha>
+Requested revisions
+
+1. [SEVERITY] <location> - issue
+   Why: practical impact
    Fix: smallest complete correction
 ```
 
-If none:
+Use most useful available planlet slug and `unknown` when slug or commit SHA is unavailable.
 
-`- None.`
+`<location>` should be `file:line` when available. Otherwise use most stable available source location, such as file section, task identifier, heading, or supplied-plan reference.
+
+If no findings, use:
+
+```text
+Verdict: READY
+Reviewed: <plan-identifier> @ <commit-sha>
+Requested revisions
+
+- None.
+```
 
 ## Final Check
 
-Confirm all applicable checks completed, review continued past the first finding, fresh-agent simulation and proof challenge were performed, findings are grouped by root cause, no finding asks for repository-obvious detail or unnecessary scope, and output is one review code block followed only by `Review ready`. No commands executed.
+Confirm all applicable checks completed, review continued past first finding, fresh-agent simulation and proof challenge were performed, findings are grouped by root cause, no finding asks for repository-obvious detail or unnecessary scope, and output follows exact `Output` contract. No commands executed.
