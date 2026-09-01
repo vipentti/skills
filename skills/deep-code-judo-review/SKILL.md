@@ -1,9 +1,9 @@
 ---
 name: deep-code-judo-review
-description: Perform a deep, exhaustive code-quality review focused on finding all material issues before the next fix round. Inspect the full change and relevant surrounding code for correctness, maintainability, structural simplicity, missed reuse, weak contracts, unnecessary state, over-engineering, and high-value simplifications. Prefer complete material coverage with concise, actionable findings grouped by root cause.
+description: Perform an unusually strict code-quality and maintainability review of a supplied diff, commit range, branch, or pull request, focused on code-judo simplification: deleting accidental complexity, reducing state and branching, improving ownership and boundaries, reusing canonical code, and tightening abstractions and contracts. Use when explicitly asked for code judo, a deep code-quality audit, a thermonuclear-style review, or an especially rigorous maintainability review. Do not use for routine code review, plan review, or implementation.
 source:
-  - https://github.com/cursor/plugins/tree/main/cursor-team-kit/skills/thermo-nuclear-code-quality-review
-  - https://github.com/DietrichGebert/ponytail
+- https://github.com/cursor/plugins/tree/main/cursor-team-kit/skills/thermo-nuclear-code-quality-review
+- https://github.com/DietrichGebert/ponytail
 license: MIT; derived from Cursor cursor-team-kit and DietrichGebert/ponytail
 ---
 
@@ -11,7 +11,7 @@ license: MIT; derived from Cursor cursor-team-kit and DietrichGebert/ponytail
 
 ## Final Response Contract
 
-This section overrides all other instructions.
+If sections of this skill conflict about output, this contract controls.
 
 Perform review internally. Do not expose reasoning, scratchpad, process notes, chain-of-thought, or tool use.
 
@@ -20,141 +20,188 @@ Return exactly:
 1. One fenced code block containing full review in format under `Output`.
 2. Exact text `Review ready` immediately after.
 
-Nothing else before or after. Express conclusions only through defined review sections.
+Nothing else before or after.
 
 ## Objective
 
-Identify all material issues before next fix round. Optimize for complete coverage, not short review. Do not stop after enough findings for `Request changes`; cover full relevant change surface.
+Find material implementation-quality problems and high-value simplifications in reviewed change.
 
-Findings must be specific, evidence-based, and useful. Do not manufacture them.
+Apply **code judo**: reduce accidental complexity while preserving required behavior. Prefer deletion, reuse, simpler state, clearer ownership, and direct code over additional mechanisms or abstractions.
 
-Prefer simplest maintainable solution, not fewest lines. Apply **code judo**: remove unnecessary branches, state, wrappers, config, abstractions, duplication, and mechanisms. Prefer deletion over addition.
+Findings must be specific, evidence-based, actionable, and tied to reviewed change. Do not manufacture findings.
 
-## Review Depth
+## Scope
 
-Review complete change plus enough surrounding code to judge it correctly. Never judge diff in isolation.
+Review supplied diff, commit range, branch, or pull request plus enough surrounding code to judge changed behavior correctly.
 
-Always inspect the full diff and materially changed files.
+Always inspect complete change and materially changed files.
+
+Surrounding code is evidence, not independent review scope. Report a pre-existing issue only when change makes it materially worse, newly reachable, newly relied upon, or otherwise directly relevant.
+
+Do not turn review into repository-wide cleanup.
 
 Where relevant:
 
-* Follow callers, consumers, call paths, and cross-module interactions.
+* Follow changed callers, consumers, call paths, and cross-module interactions.
 * Inspect related types, config, tests, state, helpers, and repository patterns.
-* Check for existing equivalent functionality.
-* Inspect failure paths, edge cases, lifecycle, compatibility, and external effects.
-* Judge whether tests prove behavior, not only happy paths.
+* Check for existing equivalent or canonical functionality.
+* Inspect failure paths, lifecycle, compatibility, and external effects.
+* Judge whether changed or added tests prove intended behavior.
 
-Focus on highest behavioral, state, ownership, contract, and complexity risk. Avoid unrelated areas unless material.
+## Static Review
+
+This is a read-only review.
+
+Do not run tests, builds, linters, formatters, type checkers, static analyzers, benchmarks, coverage tools, application binaries, or integration environments.
+
+Do not modify files, install dependencies, apply fixes, or otherwise change repository state.
+
+Read-only file, diff, history, search, and repository inspection is allowed.
 
 ## Review Standard
 
-Evaluate all applicable dimensions.
+Evaluate applicable dimensions, prioritizing structural simplification and maintainability.
 
-### Correctness
+### Simplification
 
-Look for wrong behavior, missed edge cases, broken assumptions, incomplete handling, ordering bugs, invalid transitions, partial updates, bad lifecycle, and inconsistent failure state.
-
-### Tests
-
-Look for missing behavioral, negative, failure, or regression coverage; implementation-coupled tests; tests that fail to prove intended behavior; duplicated setup.
-
-Request tests only when they materially improve confidence.
-
-### Types and Contracts
-
-Look for unsafe casts, `any`, weak contracts, unnecessary optionality, runtime checks replacing static guarantees, invalid states representable by types, duplicate representations, and over-flexible APIs.
-
-### State and Branching
-
-Look for excessive flags, booleans encoding one state machine, stored derived state, removable branches, flexible condition chains, unclear ownership, and inconsistent updates.
-
-### Ownership
-
-Look for wrong-layer logic, scattered feature behavior, callers owning owner-level behavior, low-level modules knowing policy, utility modules gaining domain behavior, and unclear responsibility growth.
-
-### Reuse
-
-Look for existing helpers, abstractions, or patterns that should replace new code, plus duplicate validation, parsing, normalization, formatting, or state handling.
-
-### Native Solutions
-
-Prefer simpler sufficient native options:
-
-1. Language or standard library
-2. Platform
-3. Framework
-4. Existing dependencies
-
-### Abstraction Quality
-
-Look for rename-only wrappers, one-use abstractions, unjustified interfaces or factories, single-use generic helpers, speculative extensibility, unnecessary config, and costly indirection.
-
-### Coupling
-
-Look for new cross-module dependencies, hidden coordination, shared mutable state, bidirectional knowledge, API leaks, and changes increasing future touch points.
-
-### Complexity
-
-Look for over-engineering, unnecessary flexibility, excess config, avoidable state or branches, pointless indirection, duplicate mechanisms, and handling for unrequired scenarios.
-
-### Security and Data Integrity
-
-When applicable, look for bad trust-boundary validation, authorization assumptions, secret handling, integrity races, partial writes, lossy transforms, rollback/cleanup, and insecure defaults.
-
-Do not remove complexity required for security, integrity, concurrency, compatibility, or correctness.
-
-## Simplification Ladder
+Look for implementations that can remove concepts, branches, helpers, modes, wrappers, configuration, indirection, or duplicate mechanisms.
 
 Prefer fixes in this order:
 
-1. Delete unnecessary code
-2. Reuse existing code
+1. Delete unnecessary code or mechanisms
+2. Reuse canonical existing code
 3. Use language or standard library
 4. Use platform or framework
 5. Use existing dependencies
 6. Simplify model or state
 7. Add smallest necessary abstraction
 
-Do not trade clarity for fewer lines.
+Prefer simplest maintainable solution, not fewest lines.
 
-## Presumptive Problems
+### State and Control Flow
 
-Treat as inspection signals, not automatic defects:
+Look for:
 
-* New abstractions, wrappers, config, dependencies, flags, modes, state, APIs, helpers, or interfaces
-* Duplicate logic or feature logic spread across layers
+* Excessive flags or booleans encoding one state machine
+* Stored derived state
+* Independently updated representations of same state
+* Removable branches and special cases
+* Unclear transitions or lifecycle
+* Partial or inconsistent updates
+* Unnecessary sequential orchestration
+
+Prefer models that make invalid or unnecessary states impossible instead of adding conditionals around them.
+
+### Ownership and Boundaries
+
+Look for:
+
+* Logic in wrong layer or module
+* Feature behavior scattered across unrelated paths
+* Callers owning behavior belonging to callee or domain owner
+* Low-level modules knowing policy they should not own
+* Generic utilities accumulating domain behavior
+* New dependencies or coordination between otherwise independent components
+* API details leaking across boundaries
+
+Move behavior toward module that naturally owns concept.
+
+### Reuse
+
+Look for duplicate validation, parsing, normalization, formatting, state handling, orchestration, or other functionality already provided by repository.
+
+Prefer canonical repository mechanisms over near-duplicates.
+
+### Abstractions and Contracts
+
+Look for:
+
+* Rename-only or pass-through wrappers
+* One-use abstractions without a clear boundary benefit
+* Unjustified interfaces, factories, or generic helpers
+* Speculative extensibility or unnecessary configuration
+* Unsafe casts or weakly shaped data
+* Unnecessary optionality
+* Runtime checks replacing clear static contracts
+* APIs flexible beyond actual requirements
+
+Each abstraction and extension point must earn its complexity.
+
+### Coupling and Complexity
+
+Look for:
+
+* Hidden coordination
+* Shared mutable state
+* Bidirectional knowledge
+* Increasing future touch points
+* Ad-hoc branches added to already busy flows
+* Multiple mechanisms solving same problem
+* Handling for scenarios requirements do not demand
+
+Prefer deleting complexity over redistributing it.
+
+### Tests
+
+Inspect tests when relevant to changed behavior.
+
+Look for:
+
+* Missing behavioral, negative, failure, or regression coverage where confidence materially depends on it
+* Tests coupled to implementation rather than behavior
+* Tests that do not prove intended contract
+* Test structure reflecting or reinforcing unnecessary production complexity
+
+Request additional tests only when they materially improve confidence.
+
+### Correctness, Security, and Integrity
+
+Do not ignore material correctness, security, data-integrity, lifecycle, concurrency, or compatibility problems encountered during review.
+
+Code-judo simplification must not remove complexity required for:
+
+* Correct behavior
+* Trust-boundary validation
+* Authorization
+* Atomicity and integrity
+* Concurrency
+* Cleanup or rollback
+* Lifecycle requirements
+* Compatibility
+* Explicit product requirements
+
+## Inspection Signals
+
+Treat these as reasons to inspect closely, not automatic defects:
+
+* New abstractions, wrappers, configuration, dependencies, flags, modes, APIs, helpers, or interfaces
+* New state or duplicate representations
+* Special-case branching
+* Feature logic spread across layers
 * Runtime type checks or unsafe casts
-* Responsibility growth in complex modules
-* Multiple independently updated representations of same state
+* Responsibility growth in already complex modules
+* Bespoke functionality resembling existing repository mechanisms
 
-Each addition must earn its complexity.
+Judge practical complexity and maintenance cost, not mere existence.
 
-## Deep Review Discipline
+## Review Discipline
 
-Be strict and evidence-based. Passing behavior alone is insufficient.
+Be strict and evidence-based.
 
-Review dimensions independently. Existing findings do not define scope.
+Do not stop after finding enough issues to justify `Request changes`. Cover complete relevant change surface and surface independent material issues in same review.
 
-Do not stop once enough findings exist to justify `Request changes`.
+Group findings by root cause. Do not split one design problem into many symptoms.
 
-Assume this is the last review before merge: surface independent material issues now rather than deferring them to later rounds.
-
-Group by root cause. Exclude cosmetic, naming, formatting, style-only, and speculative redesign feedback. Prefer deletion, reuse, or state simplification over large redesign.
+Exclude cosmetic, naming, formatting, style-only, and speculative redesign feedback.
 
 Each finding must:
 
 * Identify concrete issue
 * Explain practical impact
 * Give simpler or safer direction
-* Be actionable without exposing reasoning
+* Be introduced, exposed, or materially affected by reviewed change
 
-Do not apply fixes unless asked. Do not describe process or mention tool use in output.
-
-## Do Not Oversimplify
-
-Keep complexity required for correctness, security, integrity, concurrency, error handling, lifecycle, compatibility, or explicit requirements.
-
-Code judo removes accidental complexity only.
+Do not apply fixes unless explicitly asked.
 
 ## Output
 
@@ -163,12 +210,19 @@ Inside code block, start with one verdict:
 **Review approved**, **Review approved with suggestions**,
 **Request changes**, or **Needs discussion**
 
+Choose verdict as follows:
+
+* `Review approved`: no material findings
+* `Review approved with suggestions`: only non-blocking `Suggestion` findings
+* `Request changes`: one or more definite `Major` or `Blocker` findings
+* `Needs discussion`: no definite blocking defect is established, but an unresolved requirement or design decision prevents approval
+
 Then, in order:
 
 1. Reviewed
 2. Requested changes
 3. Approved items
-4. Open questions, only for `Needs discussion`
+4. Open questions, when applicable
 5. Code judo, optional
 
 No extra sections or commentary.
@@ -181,26 +235,18 @@ Example: `Reviewed: PR #123 @ <sha>`
 
 ### Requested changes
 
-Report all material findings. Normally use 8 or fewer by grouping root causes. Exceed 8 for additional independent material issues. Never omit one only to meet limit.
+Report all material findings, grouped by root cause. Never omit material issue to satisfy numeric limit.
 
-If there are no requested changes:
+If there are no findings:
 
 * None
 
 Format:
 
-```
+```text
 1. [Severity] [tag] file:line - issue
    Why: impact
    Fix: direction
-```
-
-Example:
-
-```
-1. [Major] [yagni] src/store.ts:42 - Generic provider interface has one implementation.
-   Why: It adds another contract and indirection without reducing complexity.
-   Fix: Use the concrete store directly until a second implementation requires abstraction.
 ```
 
 Severity:
@@ -211,29 +257,41 @@ Severity:
 
 ### Approved items
 
-Briefly list accepted decisions. If none are worth calling out:
+Briefly list accepted decisions worth preserving.
+
+If none:
 
 * No specific approved items
 
-Do not repeat requested changes.
+Do not repeat findings.
 
 ### Open questions
 
-Only genuine design decisions unresolved by implementation or requirements. Repository-inspectable uncertainty does not qualify.
+Include only genuine requirement or design questions that repository inspection cannot resolve.
+
+Do not use questions as substitutes for findings when evidence already establishes a problem.
+
+Omit section when none.
 
 ### Code judo
 
-Optionally include one high-impact root-cause simplification reducing code, state, branching, coupling, or abstraction. Omit if none.
+Optionally include one high-impact root-cause simplification that substantially reduces code, state, branching, coupling, or abstraction.
+
+Omit if none.
 
 ## Final Check
 
 Before returning, ensure:
 
-* Relevant change surface fully considered
-* Findings material, evidence-based, grouped by root cause
-* No material issue omitted for finding limit
-* Necessary complexity not criticized merely for existing
-* Deletion, reuse, native solutions, and state/model simplification considered
+* Complete relevant change surface reviewed
+* Findings tied to introduced, exposed, or materially affected behavior
+* Surrounding code used as evidence rather than independent scope
+* No validation commands or repository mutations performed
+* Findings material, evidence-based, and grouped by root cause
+* No material issue omitted because review already blocks
+* Necessary complexity preserved
+* Deletion, reuse, native solutions, and model or state simplification considered
+* Verdict matches findings
 * One code block, correct structure, no reasoning or process text
 * No em dashes or en dashes
 * Only `Review ready` appears outside code block
