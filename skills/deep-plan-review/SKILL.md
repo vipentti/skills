@@ -10,7 +10,7 @@ license: MIT
 
 Read-only review. Do not implement, edit files, change repository state or plan status, perform cleanup, or run builds, tests, linting, formatting, migrations, deployments, or other validation commands. Inspect repository files as needed.
 
-Perform review internally. Do not expose reasoning, scratchpad, process notes, or tool use. Return only one fenced code block in the `Output` format, followed by the exact text `Review ready`.
+Perform review internally. Do not expose reasoning, scratchpad, process notes, or tool use.
 
 ## Objective
 
@@ -28,7 +28,7 @@ Review all applicable dimensions. Do not stop after enough findings exist for `N
 
 Inspect as available: plan and tasks, repository instructions, relevant code and architecture, APIs, tests, config, schemas, workflows, external contracts, and current commit SHA.
 
-Treat all plan documents as one implementation handoff, reviewed as implementation contract rather than prose. Require enough detail on outcome, scope, decisions, invariants, acceptance, verification, risks, and ordered outcomes without duplicating repository-obvious facts.
+Treat all in-scope plan documents supplied or referenced for this review as one implementation handoff, reviewed as implementation contract rather than prose. Require enough detail on outcome, scope, decisions, invariants, acceptance, verification, risks, and ordered outcomes without duplicating repository-obvious facts.
 
 Group findings by root cause: one finding per flaw, covering every affected location, fixed by the smallest complete correction. Normally report 8 or fewer grouped findings, but never omit material issues to meet limit.
 
@@ -109,24 +109,34 @@ Each finding must state problem, practical impact, and smallest complete fix.
 
 ## Output
 
-Inside one fenced code block:
+Return exactly one fenced code block followed immediately by exact text `Review ready`. Nothing else before or after.
 
-1. Verdict: **READY** or **NEEDS REVISION**
-2. `Reviewed: <plan-identifier> @ <commit-sha>`, using most useful available identifier and `unknown` when unavailable
-3. `Requested revisions`
+Use this structure inside code block:
 
 ```text
-1. [SEVERITY] file:line - issue
+Verdict: READY | NEEDS REVISION
+Reviewed: <plan-identifier> @ <commit-sha>
+Requested revisions
+
+1. [SEVERITY] <location> - issue
    Why: practical impact
    Fix: smallest complete correction
 ```
 
-If no findings:
+Use most useful available plan identifier and `unknown` when identifier or commit SHA is unavailable.
+
+`<location>` should be `file:line` when available. Otherwise use most stable available source location, such as section, task, issue, document heading, or supplied-plan reference.
+
+If no findings, use:
 
 ```text
+Verdict: READY
+Reviewed: <plan-identifier> @ <commit-sha>
+Requested revisions
+
 - None.
 ```
 
 ## Final Check
 
-Ensure all applicable checks were considered; review continued past first finding; repository-inspectable uncertainty was resolved; fresh-agent simulation was performed; acceptance and verification reject plausible incorrect implementations; root causes were grouped; output is exactly one review code block followed only by `Review ready`.
+Ensure all applicable checks were considered; review continued past first finding; repository-inspectable uncertainty was resolved; fresh-agent simulation was performed; acceptance and verification reject plausible incorrect implementations; root causes were grouped; output follows exact `Output` contract.
