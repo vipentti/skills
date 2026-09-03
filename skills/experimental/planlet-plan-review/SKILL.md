@@ -1,6 +1,6 @@
 ---
 name: planlet-plan-review
-description: Read-only convergence review for Planlets after initial review or revision. Checks plan.md and tasks.md for material contradictions, stale decisions, missing task coverage, invalid ordering, unresolved implementation decisions, and revision regressions. Do not use for exhaustive design discovery, architecture critique, optimization, or broad edge-case hunting.
+description: Read-only convergence review for Planlets after a substantive review has already been completed, normally after revisions. Re-checks plan.md and tasks.md for material contradictions, stale decisions, missing task coverage, invalid ordering, unresolved implementation decisions, repository mismatches, and revision regressions. Do not use for initial or exhaustive design review, architecture critique, optimization, or broad edge-case discovery.
 license: MIT
 ---
 
@@ -10,9 +10,9 @@ license: MIT
 
 Read-only review. Do not edit files, change task state, complete the planlet, modify repository state, or implement changes.
 
-Review internally. Do not expose reasoning, scratchpad, process notes, or tool use.
+This is a convergence review, not a discovery review. Determine whether the current plan is coherent and ready to implement. Do not reopen settled design decisions or search for further improvements merely because alternatives exist.
 
-This is a **convergence review**, not a deep discovery review. The goal is to determine whether the current plan is coherent and ready to implement, not whether it could be improved further.
+Complete all applicable checks before the verdict. Do not stop after the first finding.
 
 ## Objective
 
@@ -20,20 +20,18 @@ Primary test:
 
 > Can a competent implementation agent follow this plan as written without encountering a material contradiction, missing required work, invalid instruction, or unresolved design decision?
 
-Report only issues likely to cause incorrect implementation, blocked implementation, invalid verification, or material rework.
-
-Do not reopen settled design decisions merely because another approach is possible.
+Report only defects likely to cause incorrect or blocked implementation, invalid verification, or material rework.
 
 ## Inputs
 
 Review the in-scope `plan.md` and `tasks.md` as one implementation handoff.
 
-Inspect repository code, tests, config, or documentation only when needed to verify a material claim or resolve an apparent contradiction. Do not perform broad repository exploration looking for additional concerns.
-
 Treat:
 
-- `plan.md` as the authority for outcome, scope, design decisions, invariants, acceptance, and verification.
-- `tasks.md` as the ordered execution breakdown implementing that plan.
+* `plan.md` as owning outcome, scope, design decisions, invariants, acceptance, and verification.
+* `tasks.md` as the ordered execution breakdown implementing that plan.
+
+Inspect repository code, tests, config, or documentation only when needed to verify a material claim or resolve an apparent contradiction. Do not broadly explore the repository for additional concerns.
 
 ## Review Checks
 
@@ -41,16 +39,16 @@ Treat:
 
 Check that the plan agrees with itself.
 
-Report:
+Report material:
 
-- contradictory requirements or design decisions
-- stale sections left behind after revisions
-- scope or exclusion conflicts
-- acceptance criteria inconsistent with the stated behavior
-- verification that proves different behavior than the plan requires
-- terminology or ownership differences that materially change meaning
+* contradictory requirements or design decisions
+* stale sections left after revisions
+* scope or exclusion conflicts
+* acceptance criteria inconsistent with required behavior
+* verification proving different behavior than the plan requires
+* terminology or ownership differences that change meaning
 
-Do not report harmless wording differences.
+Ignore harmless wording differences.
 
 ### 2. Plan-task consistency
 
@@ -58,22 +56,22 @@ Ensure `tasks.md` faithfully implements `plan.md`.
 
 Report when:
 
-- a required plan outcome has no task ownership
-- a task contradicts the plan
-- a task introduces materially out-of-scope behavior
-- prerequisite work occurs after its consumer
-- a task depends on excluded or nonexistent work
-- completion conditions conflict with plan acceptance criteria
+* required plan outcomes lack task ownership
+* tasks contradict the plan
+* tasks introduce materially out-of-scope behavior
+* prerequisites occur after their consumers
+* tasks depend on excluded or nonexistent work
+* completion conditions conflict with plan acceptance criteria
 
 Do not require every plan detail to be repeated in tasks.
 
 ### 3. Implementability
 
-Check for unresolved choices that would force the implementer to invent material behavior.
+Check for unresolved choices that force the implementer to invent material behavior.
 
-Report only when reasonable implementations could differ materially in behavior, ownership, state, compatibility, failure semantics, or externally visible results.
+Report when reasonable implementations could differ materially in behavior, ownership, state, compatibility, failure semantics, or externally visible results.
 
-Do not demand explicit detail when repository conventions or the plan already settle the choice.
+Do not demand detail already settled by repository conventions or the plan.
 
 ### 4. Repository alignment
 
@@ -81,56 +79,33 @@ Verify repository facts only where they matter to execution.
 
 Report material mismatches such as:
 
-- referenced files, APIs, commands, or configuration that do not exist and are not introduced by the plan
-- assumptions contradicted by the relevant existing implementation
-- incorrect ownership or integration points
-- verification instructions that cannot work in the repository as described
+* referenced files, APIs, commands, or configuration that do not exist and are not introduced by the plan
+* assumptions contradicted by relevant existing implementation
+* incorrect ownership or integration points
+* verification instructions that cannot work as described
 
-Do not use this check to conduct a new architecture review or search for better implementation approaches.
+Do not turn this check into architecture review or implementation optimization.
 
 ### 5. Revision regressions
 
-When the plan has been revised, check that changes did not leave related sections or tasks inconsistent.
+When the plan has been revised, check affected sections and tasks for inconsistencies involving:
 
-Pay particular attention to:
+* renamed concepts
+* changed ownership
+* changed scope
+* changed ordering
+* removed behavior
+* modified acceptance criteria
+* modified verification
 
-- renamed concepts
-- changed ownership
-- changed scope
-- changed ordering
-- removed behavior
-- modified acceptance criteria
-- modified verification
+Report current inconsistency, not revision history.
 
-Report the resulting inconsistency, not the history of how it arose.
-
-## Convergence Discipline
-
-Do **not** report:
-
-- alternative designs that are merely preferable
-- additional edge cases not required by the stated behavior
-- optional hardening or polish
-- speculative future requirements
-- opportunities for refactoring
-- additional abstractions
-- broader architecture improvements
-- stronger verification when existing verification is sufficient
-- additional documentation that implementation does not require
-- minor conciseness, style, naming, or wording improvements
-- concerns already resolved by the plan or repository
-- issues whose fix would not materially affect implementation correctness
-
-Do not expand the review because few or no findings remain.
-
-A clean review is a valid and desirable result.
-
-## Findings
+## Findings Standard
 
 Use only:
 
-- **BLOCKER**: the plan is contradictory, undefined, impossible, or unsafe enough that implementation cannot reliably proceed.
-- **IMPORTANT**: likely to cause incorrect or incomplete implementation, invalid verification, or material rework.
+* **BLOCKER**: implementation cannot reliably proceed because the plan is materially contradictory, undefined, impossible, or unsafe.
+* **IMPORTANT**: likely to cause incorrect or incomplete implementation, invalid verification, or material rework.
 
 Before reporting an IMPORTANT finding, ask:
 
@@ -138,16 +113,20 @@ Before reporting an IMPORTANT finding, ask:
 
 If not, omit it.
 
+Do not report alternative designs, additional edge cases, optional hardening or polish, speculative future requirements, refactoring opportunities, additional abstractions, broader architecture improvements, unnecessary stronger verification or documentation, style or naming improvements, resolved concerns, or issues without material implementation impact.
+
 Group findings by root cause. State the issue, practical impact, and smallest complete fix.
 
-Do not report suggestions or optional improvements.
+Prefer corrections that preserve intended scope, but do not suppress a material defect when correcting it requires changing scope.
+
+Do not expand the review because few or no findings remain. A clean review is a valid result.
 
 ## Verdict
 
-- **READY**: no BLOCKER or IMPORTANT findings remain.
-- **NEEDS REVISION**: at least one BLOCKER or IMPORTANT finding remains.
+* **READY**: no BLOCKER or IMPORTANT findings remain.
+* **NEEDS REVISION**: at least one BLOCKER or IMPORTANT finding remains.
 
-`READY` means the plan is sufficiently coherent for implementation. It does not mean no imaginable improvement exists.
+`READY` means the plan is sufficiently coherent for implementation, not that no further improvement is possible.
 
 ## Output
 
@@ -163,9 +142,9 @@ Requested revisions
    Fix: smallest complete correction
 ```
 
-Use the most useful available planlet identifier and `unknown` when the commit SHA is unavailable.
+Use the most useful available planlet identifier. Use `unknown` when the planlet identifier or commit SHA is unavailable.
 
-Prefer `file:line` for locations when available; otherwise use the relevant heading or task identifier.
+Prefer `file:line` for locations when available. Otherwise use the relevant heading or task identifier.
 
 If no findings:
 
@@ -183,8 +162,7 @@ Before returning `NEEDS REVISION`, confirm every finding:
 
 1. identifies a concrete defect in the current plan,
 2. could materially affect implementation or verification,
-3. is not merely an opportunity to improve the design,
-4. is not already settled by repository reality, and
-5. can be fixed without expanding the intended scope.
+3. is not merely an opportunity to improve the design, and
+4. is not already settled by repository reality.
 
-If no finding passes all five conditions, return `READY`.
+If no finding passes all four conditions, return `READY`.
