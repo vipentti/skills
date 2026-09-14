@@ -20,3 +20,4 @@ Add `-g` to install globally, `--agent <name>` to skip the agent picker (`claude
 | [simple-implementation](skills/simple-implementation/SKILL.md) | implement features, fixes, and refactors with the least machinery needed while preserving correctness |
 | [planlet-workflow](skills/planlet-workflow/SKILL.md) | execute Planlets task by task with verification, one commit per task, and a separate completion commit |
 | [herdr-review-loop](skills/experimental/herdr-review-loop/SKILL.md) | experimental: dispatch a second-agent reviewer over Herdr, exchange findings files, and loop until approval |
+| [deep-proposal-review](skills/experimental/deep-proposal-review/SKILL.md) | experimental: deep read-only review of proposals, RFCs, and design documents for problem, scope, architecture, contracts, and ordered vertical slices |
