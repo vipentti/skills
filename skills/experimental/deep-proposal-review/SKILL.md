@@ -20,13 +20,15 @@ Underspecified: two reasonable interpretations yield materially different scope,
 
 ## Inputs
 
-Inspect proposal, repository, related or competing proposals, authoritative external contracts, and commit SHA. Resolve repository-inspectable uncertainty; do not restate repository-settled facts. Flag unverified claims and assumptions presented as facts when direction depends on them. Open questions only if they cannot change acceptance; resolve or bound those affecting feasibility, scope, architecture, compatibility, security, migration, or required slices. Group findings by root cause; one finding covers all affected sections and consequences.
+Inspect as applicable: proposal, repository, related or competing proposals, authoritative external contracts, and commit SHA. Resolve repository-inspectable uncertainty; do not restate repository-settled facts. Flag unverified claims and assumptions presented as facts when direction depends on them. Open questions only if they cannot change acceptance; resolve or bound those affecting feasibility, scope, architecture, compatibility, security, migration, or required slices. Group findings by root cause; one finding covers all affected sections and consequences.
 
 ## Review Checks
 
+Review all applicable checks even after `NEEDS REVISION` is clear.
+
 ### 1. Problem and value
 
-Confirm concrete problem or opportunity, affected user or system behavior, and intended outcome. Work must solve that problem, not merely add desired machinery. Challenge existing repository behavior, a smaller change, or narrower scope. Enough motivation to judge tradeoffs; no lengthy background or generic rationale.
+Confirm concrete problem or opportunity, affected user or system behavior, and intended outcome. Work must solve that problem, not merely add desired machinery. Challenge existing repository behavior, a smaller change, or narrower scope. Enough motivation to judge tradeoffs; no generic rationale.
 
 ### 2. Scope and behavior
 
@@ -78,7 +80,7 @@ Use only:
 * **BLOCKER**: cannot safely accept because direction is contradictory, materially undefined, infeasible, unsafe, or based on an unresolved decision that can change architecture or scope.
 * **IMPORTANT**: acceptance would likely cause wrong implementation direction, substantial rework, hidden scope, invalid assumptions, poor delivery sequencing, material over-engineering, or another proposal review round.
 
-Missing vertical slicing prevents `READY`. Do not report style, polish, naming, speculative future-proofing, planning-level detail, or alternate designs merely because they are possible. Each finding: issue, practical impact, and smallest complete proposal change needed.
+Missing vertical slicing prevents `READY`. Do not report style, polish, naming, speculative future-proofing, planning-level detail, or alternate designs just because possible. Each finding: issue, practical impact, and smallest complete proposal change needed.
 
 ## Verdict
 
